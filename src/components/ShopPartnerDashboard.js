@@ -2683,7 +2683,9 @@ import {
   ArrowUp,
   ArrowDown,
   Download,
-  Send
+  Send,
+  Shield,
+  CreditCard
 } from 'lucide-react';
 import { ref, onValue, update, remove, push, set, get } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -2691,267 +2693,6 @@ import { db, storage } from '../firebase/config';
 import '../styles/ShopPartnerDashboard.css';
 import VendorProductsManager from './VendorProductsManager';
 
-// EditShopModal component
-const EditShopModal = ({
-  isOpen,
-  onClose,
-  editShopForm,
-  handleInputChange,
-  handleUpdateShop,
-  shopCategories,
-  fetchGoogleRating,
-  isRatingLoading,
-  handleManualRatingChange
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <div className="modal-header">
-          <h2>Edit Shop</h2>
-          <button className="modal-close" onClick={onClose}>
-            <X size={24} />
-          </button>
-        </div>
-
-        <form onSubmit={handleUpdateShop} className="add-shop-form">
-          <div className="form-section">
-            <h3>Shop Information</h3>
-
-            <div className="form-group">
-              <label htmlFor="edit-name">Shop Name*</label>
-              <input
-                type="text"
-                id="edit-name"
-                name="name"
-                value={editShopForm.name}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter shop name"
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="edit-address">Shop Address*</label>
-                <input
-                  type="text"
-                  id="edit-address"
-                  name="address"
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter full address"
-                  value={editShopForm.address}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="edit-city">City*</label>
-                <input
-                  type="text"
-                  id="edit-city"
-                  name="city"
-                  value={editShopForm.city}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter city"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="edit-category">Category*</label>
-                <select
-                  id="edit-category"
-                  name="category"
-                  value={editShopForm.category}
-                  onChange={handleInputChange}
-                  required
-                >
-                  {shopCategories.map((category, index) => (
-                    <option key={index} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Rating</label>
-                <div className="rating-display-container">
-                  <div className="rating-display">
-                    {editShopForm.rating ? (
-                      <span className="rating-value">
-                        {editShopForm.rating} <Star size={14} className="star-icon" />
-                        <span className="reviews-count">({editShopForm.reviews} reviews)</span>
-                      </span>
-                    ) : (
-                      <span className="no-rating">Not set yet</span>
-                    )}
-                  </div>
-                  <div className="manual-rating-inputs">
-                    <div className="rating-input-group">
-                      <label htmlFor="edit-rating">Rating:</label>
-                      <input
-                        type="number"
-                        id="edit-rating"
-                        name="rating"
-                        min="0"
-                        max="5"
-                        step="0.1"
-                        value={editShopForm.rating || 0}
-                        onChange={handleManualRatingChange}
-                        className="rating-input"
-                      />
-                    </div>
-                    <div className="rating-input-group">
-                      <label htmlFor="edit-reviews">Reviews:</label>
-                      <input
-                        type="number"
-                        id="edit-reviews"
-                        name="reviews"
-                        min="0"
-                        value={editShopForm.reviews || 0}
-                        onChange={handleManualRatingChange}
-                        className="reviews-input"
-                      />
-                    </div>
-                  </div>
-                  <div className="rating-buttons">
-                    <button
-                      type="button"
-                      className="fetch-rating-button"
-                      onClick={() => fetchGoogleRating(editShopForm, 'edit')}
-                      disabled={isRatingLoading}
-                    >
-                      {isRatingLoading ? (
-                        <RefreshCw size={16} className="spinning" />
-                      ) : (
-                        <>
-                          <RefreshCw size={16} />
-                          Fetch from Google
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="form-section">
-              <h3>Meat Sector Type</h3>
-              <div className="meat-sector-options">
-                <div className="form-radio-group">
-                  <input
-                    type="radio"
-                    id="edit-halal"
-                    name="meatSectorType"
-                    value="Halal"
-                    checked={editShopForm.meatSectorType === 'Halal'}
-                    onChange={handleInputChange}
-                  />
-                  <label htmlFor="edit-halal">Halal Cut</label>
-                </div>
-                <div className="form-radio-group">
-                  <input
-                    type="radio"
-                    id="edit-jcjatka"
-                    name="meatSectorType"
-                    value="JC Jatka"
-                    checked={editShopForm.meatSectorType === 'JC Jatka'}
-                    onChange={handleInputChange}
-                  />
-                  <label htmlFor="edit-jcjatka">JC Jatka</label>
-                </div>
-                <div className="form-radio-group">
-                  <input
-                    type="radio"
-                    id="edit-none"
-                    name="meatSectorType"
-                    value="None"
-                    checked={editShopForm.meatSectorType === 'None'}
-                    onChange={handleInputChange}
-                  />
-                  <label htmlFor="edit-none">Not Applicable</label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="form-section">
-            <h3>Owner Information</h3>
-
-            <div className="form-group">
-              <label htmlFor="edit-owner">Shop Owner*</label>
-              <input
-                type="text"
-                id="edit-owner"
-                name="owner"
-                value={editShopForm.owner}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter owner name"
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="edit-phone">Phone Number*</label>
-                <input
-                  type="tel"
-                  id="edit-phone"
-                  name="phone"
-                  value={editShopForm.phone}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter phone number"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="edit-email">Email*</label>
-                <input
-                  type="email"
-                  id="edit-email"
-                  name="email"
-                  value={editShopForm.email}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter email address"
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-gstNumber">GST Number</label>
-              <input
-                type="text"
-                id="edit-gstNumber"
-                name="gstNumber"
-                value={editShopForm.gstNumber}
-                onChange={handleInputChange}
-                placeholder="Enter GST number (optional)"
-              />
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button type="button" className="cancel-button" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="update-button">
-              Update Shop
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// AddShopModal component
 const AddShopModal = ({
   isOpen,
   onClose,
@@ -2978,7 +2719,8 @@ const AddShopModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmitShop} className="add-shop-form">
+        <form onSubmit={handleSubmitShop} className="add-shop-form" id="add-shop-form">
+          {/* Shop Information Section */}
           <div className="form-section">
             <h3>Shop Information</h3>
 
@@ -3043,7 +2785,7 @@ const AddShopModal = ({
 
               <div className="form-group">
                 <label>Rating</label>
-                <div className="rating-display-container">
+                <div className="rating-fetch-container">
                   <div className="rating-display">
                     {newShopForm.rating ? (
                       <span className="rating-value">
@@ -3051,54 +2793,24 @@ const AddShopModal = ({
                         <span className="reviews-count">({newShopForm.reviews} reviews)</span>
                       </span>
                     ) : (
-                      <span className="no-rating">Not set yet</span>
+                      <span className="no-rating">Not fetched yet</span>
                     )}
                   </div>
-                  <div className="manual-rating-inputs">
-                    <div className="rating-input-group">
-                      <label htmlFor="add-rating">Rating:</label>
-                      <input
-                        type="number"
-                        id="add-rating"
-                        name="rating"
-                        min="0"
-                        max="5"
-                        step="0.1"
-                        value={newShopForm.rating || 0}
-                        onChange={handleManualRatingChange}
-                        className="rating-input"
-                      />
-                    </div>
-                    <div className="rating-input-group">
-                      <label htmlFor="add-reviews">Reviews:</label>
-                      <input
-                        type="number"
-                        id="add-reviews"
-                        name="reviews"
-                        min="0"
-                        value={newShopForm.reviews || 0}
-                        onChange={handleManualRatingChange}
-                        className="reviews-input"
-                      />
-                    </div>
-                  </div>
-                  <div className="rating-buttons">
-                    <button
-                      type="button"
-                      className="fetch-rating-button"
-                      onClick={() => fetchGoogleRating(newShopForm, 'add')}
-                      disabled={isRatingLoading}
-                    >
-                      {isRatingLoading ? (
-                        <RefreshCw size={16} className="spinning" />
-                      ) : (
-                        <>
-                          <RefreshCw size={16} />
-                          Fetch from Google
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="fetch-rating-button"
+                    onClick={() => fetchGoogleRating(newShopForm, 'add')}
+                    disabled={isRatingLoading}
+                  >
+                    {isRatingLoading ? (
+                      <RefreshCw size={16} className="spinning" />
+                    ) : (
+                      <>
+                        <RefreshCw size={16} />
+                        Fetch from Google
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -3143,6 +2855,7 @@ const AddShopModal = ({
             </div>
           </div>
 
+          {/* Owner Information Section */}
           <div className="form-section">
             <h3>Owner Information</h3>
 
@@ -3200,6 +2913,238 @@ const AddShopModal = ({
             </div>
           </div>
 
+          {/* Payment Information Section - ENHANCED */}
+          <div className="form-section">
+            <h3>Payment Information</h3>
+            <div className="payment-security-note">
+              <Shield size={16} />
+              <p>Payment details are securely stored and encrypted in our system</p>
+            </div>
+
+            <div className="form-group">
+              <label>Preferred Payment Mode</label>
+              <div className="payment-mode-options">
+                <div className="form-radio-group">
+                  <input
+                    type="radio"
+                    id="bank-transfer"
+                    name="preferredPaymentMode"
+                    value="BANK"
+                    checked={newShopForm.preferredPaymentMode === 'BANK'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="bank-transfer">Bank Transfer (NEFT/IMPS)</label>
+                </div>
+                <div className="form-radio-group">
+                  <input
+                    type="radio"
+                    id="upi-transfer"
+                    name="preferredPaymentMode"
+                    value="UPI"
+                    checked={newShopForm.preferredPaymentMode === 'UPI'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="upi-transfer">UPI Transfer</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Conditional Fields Based on Payment Mode */}
+            {newShopForm.preferredPaymentMode === 'BANK' ? (
+              <div className="payment-details-section bank-details">
+                <h4>Bank Account Details</h4>
+
+                <div className="form-group">
+                  <label htmlFor="accountHolderName">Account Holder Name*</label>
+                  <input
+                    type="text"
+                    id="accountHolderName"
+                    name="accountHolderName"
+                    value={newShopForm.accountHolderName || ''}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Name as it appears on bank account"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="accountNumber">Account Number*</label>
+                    <input
+                      type="text"
+                      id="accountNumber"
+                      name="accountNumber"
+                      value={newShopForm.accountNumber || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Enter bank account number"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="confirmAccountNumber">Confirm Account Number*</label>
+                    <input
+                      type="text"
+                      id="confirmAccountNumber"
+                      name="confirmAccountNumber"
+                      value={newShopForm.confirmAccountNumber || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Confirm account number"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="ifscCode">IFSC Code*</label>
+                    <input
+                      type="text"
+                      id="ifscCode"
+                      name="ifscCode"
+                      value={newShopForm.ifscCode || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Bank IFSC code (e.g., SBIN0123456)"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="bankName">Bank Name*</label>
+                    <input
+                      type="text"
+                      id="bankName"
+                      name="bankName"
+                      value={newShopForm.bankName || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Enter bank name"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="bankBranch">Branch Name</label>
+                  <input
+                    type="text"
+                    id="bankBranch"
+                    name="bankBranch"
+                    value={newShopForm.bankBranch || ''}
+                    onChange={handleInputChange}
+                    placeholder="Enter bank branch (optional)"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="payment-details-section upi-details">
+                <h4>UPI Details</h4>
+
+                <div className="form-group">
+                  <label htmlFor="upiId">UPI ID*</label>
+                  <input
+                    type="text"
+                    id="upiId"
+                    name="upiId"
+                    value={newShopForm.upiId || ''}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Enter UPI ID (e.g., name@upi)"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="upiProvider">UPI Provider</label>
+                  <select
+                    id="upiProvider"
+                    name="upiProvider"
+                    value={newShopForm.upiProvider || 'other'}
+                    onChange={handleInputChange}
+                    className="upi-provider-select"
+                  >
+                    <option value="gpay">Google Pay</option>
+                    <option value="phonepe">PhonePe</option>
+                    <option value="paytm">Paytm</option>
+                    <option value="bhim">BHIM UPI</option>
+                    <option value="amazonpay">Amazon Pay</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {newShopForm.upiProvider === 'other' && (
+                  <div className="form-group">
+                    <label htmlFor="otherUpiProvider">Other UPI Provider</label>
+                    <input
+                      type="text"
+                      id="otherUpiProvider"
+                      name="otherUpiProvider"
+                      value={newShopForm.otherUpiProvider || ''}
+                      onChange={handleInputChange}
+                      placeholder="Enter UPI provider name"
+                    />
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label htmlFor="upiMobileNumber">Mobile Number Linked to UPI*</label>
+                  <input
+                    type="tel"
+                    id="upiMobileNumber"
+                    name="upiMobileNumber"
+                    value={newShopForm.upiMobileNumber || ''}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="10-digit mobile number"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Common contact fields */}
+            <div className="payment-contact-section">
+              <h4>Payment Contact Information</h4>
+              <div className="form-group">
+                <label htmlFor="paymentContactName">Payment Contact Name*</label>
+                <input
+                  type="text"
+                  id="paymentContactName"
+                  name="paymentContactName"
+                  value={newShopForm.paymentContactName || ''}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Person to contact for payment details"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="paymentContactPhone">Payment Contact Phone*</label>
+                  <input
+                    type="tel"
+                    id="paymentContactPhone"
+                    name="paymentContactPhone"
+                    value={newShopForm.paymentContactPhone || ''}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Phone number for payment coordination"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="paymentContactEmail">Payment Contact Email</label>
+                  <input
+                    type="email"
+                    id="paymentContactEmail"
+                    name="paymentContactEmail"
+                    value={newShopForm.paymentContactEmail || ''}
+                    onChange={handleInputChange}
+                    placeholder="Email for payment receipts (optional)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Document Upload Section */}
           <div className="form-section">
             <h3>Document Upload</h3>
 
@@ -3280,8 +3225,585 @@ const AddShopModal = ({
   );
 };
 
+const EditShopModal = ({
+  isOpen,
+  onClose,
+  editShopForm,
+  handleInputChange,
+  handleUpdateShop,
+  shopCategories,
+  fetchGoogleRating,
+  isRatingLoading,
+  handleManualRatingChange
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <div className="modal-header">
+          <h2>Edit Shop</h2>
+          <button className="modal-close" onClick={onClose}>
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleUpdateShop} className="add-shop-form">
+          {/* Shop Information Section */}
+          <div className="form-section">
+            <h3>Shop Information</h3>
+
+            <div className="form-group">
+              <label htmlFor="edit-name">Shop Name*</label>
+              <input
+                type="text"
+                id="edit-name"
+                name="name"
+                value={editShopForm.name}
+                onChange={handleInputChange}
+                required
+                placeholder="Enter shop name"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="edit-address">Shop Address*</label>
+                <input
+                  type="text"
+                  id="edit-address"
+                  name="address"
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter full address"
+                  value={editShopForm.address}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-city">City*</label>
+                <input
+                  type="text"
+                  id="edit-city"
+                  name="city"
+                  value={editShopForm.city}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter city"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="edit-category">Category*</label>
+                <select
+                  id="edit-category"
+                  name="category"
+                  value={editShopForm.category}
+                  onChange={handleInputChange}
+                  required
+                >
+                  {shopCategories.map((category, index) => (
+                    <option key={index} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Rating</label>
+                <div className="rating-fetch-container">
+                  <div className="rating-display">
+                    {editShopForm.rating ? (
+                      <span className="rating-value">
+                        {editShopForm.rating} <Star size={14} className="star-icon" />
+                        <span className="reviews-count">({editShopForm.reviews} reviews)</span>
+                      </span>
+                    ) : (
+                      <span className="no-rating">Not fetched yet</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="fetch-rating-button"
+                    onClick={() => fetchGoogleRating(editShopForm, 'edit')}
+                    disabled={isRatingLoading}
+                  >
+                    {isRatingLoading ? (
+                      <RefreshCw size={16} className="spinning" />
+                    ) : (
+                      <>
+                        <RefreshCw size={16} />
+                        Fetch from Google
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h3>Meat Sector Type</h3>
+              <div className="meat-sector-options">
+                <div className="form-radio-group">
+                  <input
+                    type="radio"
+                    id="edit-halal"
+                    name="meatSectorType"
+                    value="Halal"
+                    checked={editShopForm.meatSectorType === 'Halal'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="edit-halal">Halal Cut</label>
+                </div>
+                <div className="form-radio-group">
+                  <input
+                    type="radio"
+                    id="edit-jcjatka"
+                    name="meatSectorType"
+                    value="JC Jatka"
+                    checked={editShopForm.meatSectorType === 'JC Jatka'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="edit-jcjatka">JC Jatka</label>
+                </div>
+                <div className="form-radio-group">
+                  <input
+                    type="radio"
+                    id="edit-none"
+                    name="meatSectorType"
+                    value="None"
+                    checked={editShopForm.meatSectorType === 'None'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="edit-none">Not Applicable</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Owner Information Section */}
+          <div className="form-section">
+            <h3>Owner Information</h3>
+
+            <div className="form-group">
+              <label htmlFor="edit-owner">Shop Owner*</label>
+              <input
+                type="text"
+                id="edit-owner"
+                name="owner"
+                value={editShopForm.owner}
+                onChange={handleInputChange}
+                required
+                placeholder="Enter owner name"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="edit-phone">Phone Number*</label>
+                <input
+                  type="tel"
+                  id="edit-phone"
+                  name="phone"
+                  value={editShopForm.phone}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter phone number"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-email">Email*</label>
+                <input
+                  type="email"
+                  id="edit-email"
+                  name="email"
+                  value={editShopForm.email}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter email address"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-gstNumber">GST Number</label>
+              <input
+                type="text"
+                id="edit-gstNumber"
+                name="gstNumber"
+                value={editShopForm.gstNumber}
+                onChange={handleInputChange}
+                placeholder="Enter GST number (optional)"
+              />
+            </div>
+          </div>
+
+          {/* Payment Information Section - ENHANCED */}
+          <div className="form-section">
+            <h3>Payment Information</h3>
+            <div className="payment-security-note">
+              <Shield size={16} />
+              <p>Payment details are securely stored and encrypted in our system</p>
+            </div>
+
+            <div className="form-group">
+              <label>Preferred Payment Mode</label>
+              <div className="payment-mode-options">
+                <div className="form-radio-group">
+                  <input
+                    type="radio"
+                    id="edit-bank-transfer"
+                    name="preferredPaymentMode"
+                    value="BANK"
+                    checked={editShopForm.preferredPaymentMode === 'BANK'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="edit-bank-transfer">Bank Transfer (NEFT/IMPS)</label>
+                </div>
+                <div className="form-radio-group">
+                  <input
+                    type="radio"
+                    id="edit-upi-transfer"
+                    name="preferredPaymentMode"
+                    value="UPI"
+                    checked={editShopForm.preferredPaymentMode === 'UPI'}
+                    onChange={handleInputChange}
+                  />
+                  <label htmlFor="edit-upi-transfer">UPI Transfer</label>
+                </div>
+              </div>
+            </div>
+
+            {/* Conditional Fields Based on Payment Mode */}
+            {editShopForm.preferredPaymentMode === 'BANK' ? (
+              <div className="payment-details-section bank-details">
+                <h4>Bank Account Details</h4>
+
+                <div className="form-group">
+                  <label htmlFor="edit-accountHolderName">Account Holder Name*</label>
+                  <input
+                    type="text"
+                    id="edit-accountHolderName"
+                    name="accountHolderName"
+                    value={editShopForm.accountHolderName || ''}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Name as it appears on bank account"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-accountNumber">Account Number*</label>
+                    <input
+                      type="text"
+                      id="edit-accountNumber"
+                      name="accountNumber"
+                      value={editShopForm.accountNumber || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Enter bank account number"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit-confirmAccountNumber">Confirm Account Number*</label>
+                    <input
+                      type="text"
+                      id="edit-confirmAccountNumber"
+                      name="confirmAccountNumber"
+                      value={editShopForm.confirmAccountNumber || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Confirm account number"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-ifscCode">IFSC Code*</label>
+                    <input
+                      type="text"
+                      id="edit-ifscCode"
+                      name="ifscCode"
+                      value={editShopForm.ifscCode || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Bank IFSC code (e.g., SBIN0123456)"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit-bankName">Bank Name*</label>
+                    <input
+                      type="text"
+                      id="edit-bankName"
+                      name="bankName"
+                      value={editShopForm.bankName || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Enter bank name"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-bankBranch">Branch Name</label>
+                  <input
+                    type="text"
+                    id="edit-bankBranch"
+                    name="bankBranch"
+                    value={editShopForm.bankBranch || ''}
+                    onChange={handleInputChange}
+                    placeholder="Enter bank branch (optional)"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="payment-details-section upi-details">
+                <h4>UPI Details</h4>
+
+                <div className="form-group">
+                  <label htmlFor="edit-upiId">UPI ID*</label>
+                  <input
+                    type="text"
+                    id="edit-upiId"
+                    name="upiId"
+                    value={editShopForm.upiId || ''}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Enter UPI ID (e.g., name@upi)"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-upiProvider">UPI Provider</label>
+                  <select
+                    id="edit-upiProvider"
+                    name="upiProvider"
+                    value={editShopForm.upiProvider || 'other'}
+                    onChange={handleInputChange}
+                    className="upi-provider-select"
+                  >
+                    <option value="gpay">Google Pay</option>
+                    <option value="phonepe">PhonePe</option>
+                    <option value="paytm">Paytm</option>
+                    <option value="bhim">BHIM UPI</option>
+                    <option value="amazonpay">Amazon Pay</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {editShopForm.upiProvider === 'other' && (
+                  <div className="form-group">
+                    <label htmlFor="edit-otherUpiProvider">Other UPI Provider</label>
+                    <input
+                      type="text"
+                      id="edit-otherUpiProvider"
+                      name="otherUpiProvider"
+                      value={editShopForm.otherUpiProvider || ''}
+                      onChange={handleInputChange}
+                      placeholder="Enter UPI provider name"
+                    />
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label htmlFor="edit-upiMobileNumber">Mobile Number Linked to UPI*</label>
+                  <input
+                    type="tel"
+                    id="edit-upiMobileNumber"
+                    name="upiMobileNumber"
+                    value={editShopForm.upiMobileNumber || ''}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="10-digit mobile number"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Common contact fields */}
+            <div className="payment-contact-section">
+              <h4>Payment Contact Information</h4>
+              <div className="form-group">
+                <label htmlFor="edit-paymentContactName">Payment Contact Name*</label>
+                <input
+                  type="text"
+                  id="edit-paymentContactName"
+                  name="paymentContactName"
+                  value={editShopForm.paymentContactName || ''}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Person to contact for payment details"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="edit-paymentContactPhone">Payment Contact Phone*</label>
+                  <input
+                    type="tel"
+                    id="edit-paymentContactPhone"
+                    name="paymentContactPhone"
+                    value={editShopForm.paymentContactPhone || ''}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Phone number for payment coordination"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-paymentContactEmail">Payment Contact Email</label>
+                  <input
+                    type="email"
+                    id="edit-paymentContactEmail"
+                    name="paymentContactEmail"
+                    value={editShopForm.paymentContactEmail || ''}
+                    onChange={handleInputChange}
+                    placeholder="Email for payment receipts (optional)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" className="cancel-button" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="update-button">
+              Update Shop
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const PaymentModal = ({ isOpen, onClose, shopDetails, setNotification }) => {
+  // Hooks must be at the top level, before any conditionals
+  const [loading, setLoading] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [purpose, setPurpose] = useState('');
+
+  // Set the purpose when shopDetails changes
+  useEffect(() => {
+    if (shopDetails) {
+      setPurpose(`Payment to ${shopDetails.name}`);
+    }
+  }, [shopDetails]);
+
+  // Conditional return after all hooks
+  if (!isOpen || !shopDetails) return null;
+
+  const handleSubmitPayment = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Redirect to the payment form with necessary details
+      const paymentData = {
+        vendor_id: shopDetails.id,
+        vendor_name: shopDetails.name,
+        amount: amount,
+        purpose: purpose,
+        contact_name: shopDetails.paymentInfo?.paymentContactName,
+        contact_phone: shopDetails.paymentInfo?.paymentContactPhone,
+        payment_mode: shopDetails.paymentInfo?.preferredPaymentMode
+      };
+
+      // Store in sessionStorage
+      sessionStorage.setItem('vendorPaymentData', JSON.stringify(paymentData));
+
+      // Navigate to payment page
+      window.location.href = '/vendor-payment';
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      setNotification({
+        message: `Failed to initiate payment: ${error.message}`,
+        type: 'error'
+      });
+      setTimeout(() => setNotification(null), 3000);
+    } finally {
+      setLoading(false);
+      onClose();
+    }
+  };
+
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container payment-modal">
+        <div className="modal-header">
+          <h2>Initiate Payment to {shopDetails.name}</h2>
+          <button className="modal-close" onClick={onClose}>
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmitPayment} className="payment-form">
+          <div className="form-group">
+            <label htmlFor="payment-amount">Payment Amount (₹)*</label>
+            <input
+              type="number"
+              id="payment-amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+              min="1"
+              step="0.01"
+              placeholder="Enter amount"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="payment-purpose">Purpose*</label>
+            <input
+              type="text"
+              id="payment-purpose"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              required
+              placeholder="Payment purpose"
+            />
+          </div>
+
+          <div className="payment-contact-info">
+            <h3>Payment Contact Information</h3>
+            <p><strong>Contact:</strong> {shopDetails.paymentInfo?.paymentContactName}</p>
+            <p><strong>Phone:</strong> {shopDetails.paymentInfo?.paymentContactPhone}</p>
+            <p><strong>Email:</strong> {shopDetails.paymentInfo?.paymentContactEmail || 'Not provided'}</p>
+            <p><strong>Preferred Payment Mode:</strong> {shopDetails.paymentInfo?.preferredPaymentMode === 'UPI' ? 'UPI Transfer' : 'Bank Transfer'}</p>
+          </div>
+
+          <div className="payment-security-note">
+            <Shield size={16} />
+            <p>For security reasons, bank account details will be collected during payment processing</p>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" className="cancel-button" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="submit-button" disabled={loading}>
+              {loading ? 'Processing...' : 'Continue to Payment'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+
 const ShopPartnerDashboard = () => {
-  // State for active tab
   const [activeTab, setActiveTab] = useState('overview');
 
   // State for selected shop
@@ -3311,29 +3833,47 @@ const ShopPartnerDashboard = () => {
   // State for rating loading
   const [isRatingLoading, setIsRatingLoading] = useState(false);
 
+  // State for payment modal - ADD THIS LINE
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
- const calculateAmountWithoutTax = (order) => {
+  const calculateAmountWithoutTax = (order) => {
     return (order.subtotal || 0) + (order.deliveryCharge || 0);
   };
 
-
-  // State for new shop form
   const [newShopForm, setNewShopForm] = useState({
     name: '',
     address: '',
     city: '',
-    category: 'Grocery', // Default category
+    category: 'Grocery',
     owner: '',
     phone: '',
     email: '',
     gstNumber: '',
     status: 'active',
-    meatSectorType: 'None', // Default meat sector type
+    meatSectorType: 'None',
     rating: 0,
-    reviews: 0
+    reviews: 0,
+    // Payment mode
+    preferredPaymentMode: 'BANK',
+    // Bank details fields
+    accountHolderName: '',
+    accountNumber: '',
+    confirmAccountNumber: '',
+    ifscCode: '',
+    bankName: '',
+    bankBranch: '',
+    // UPI fields
+    upiId: '',
+    upiProvider: 'gpay',
+    otherUpiProvider: '',
+    upiMobileNumber: '',
+    // Contact fields
+    paymentContactName: '',
+    paymentContactPhone: '',
+    paymentContactEmail: ''
   });
 
-  // State for edit shop form
+  // State for edit shop form with payment fields
   const [editShopForm, setEditShopForm] = useState({
     id: '',
     name: '',
@@ -3347,6 +3887,24 @@ const ShopPartnerDashboard = () => {
     rating: 0,
     reviews: 0,
     meatSectorType: 'None',
+    // Payment mode
+    preferredPaymentMode: 'BANK',
+    // Bank details fields
+    accountHolderName: '',
+    accountNumber: '',
+    confirmAccountNumber: '',
+    ifscCode: '',
+    bankName: '',
+    bankBranch: '',
+    // UPI fields
+    upiId: '',
+    upiProvider: 'gpay',
+    otherUpiProvider: '',
+    upiMobileNumber: '',
+    // Contact fields
+    paymentContactName: '',
+    paymentContactPhone: '',
+    paymentContactEmail: ''
   });
 
   // State for document uploads
@@ -3771,25 +4329,72 @@ const ShopPartnerDashboard = () => {
 
     try {
       // Validate required fields
-      const requiredFields = ['name', 'address', 'city', 'category', 'owner', 'phone', 'email'];
+      const requiredFields = ['name', 'address', 'city', 'category', 'owner', 'phone', 'email', 'paymentContactName', 'paymentContactPhone'];
+
+      // Add payment-specific required fields based on payment mode
+      if (newShopForm.preferredPaymentMode === 'BANK') {
+        requiredFields.push('accountHolderName', 'accountNumber', 'ifscCode', 'bankName');
+      } else {
+        requiredFields.push('upiId', 'upiMobileNumber');
+      }
+
       const missingFields = requiredFields.filter((field) => !newShopForm[field]);
 
       if (missingFields.length > 0) {
         throw new Error(`Required fields missing: ${missingFields.join(', ')}`);
       }
 
+      // Validate account number confirmation if it's a bank transfer
+      if (newShopForm.preferredPaymentMode === 'BANK' &&
+        newShopForm.accountNumber !== newShopForm.confirmAccountNumber) {
+        throw new Error('Account number and confirmation do not match');
+      }
+
+      // Create payment details object based on selected payment mode
+      const paymentDetails = {
+        preferredPaymentMode: newShopForm.preferredPaymentMode,
+        paymentContactName: newShopForm.paymentContactName,
+        paymentContactPhone: newShopForm.paymentContactPhone,
+        paymentContactEmail: newShopForm.paymentContactEmail,
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Add appropriate payment details based on mode
+      if (newShopForm.preferredPaymentMode === 'BANK') {
+        paymentDetails.bankDetails = {
+          accountHolderName: newShopForm.accountHolderName,
+          accountNumber: newShopForm.accountNumber,
+          ifscCode: newShopForm.ifscCode,
+          bankName: newShopForm.bankName,
+          bankBranch: newShopForm.bankBranch
+        };
+      } else {
+        paymentDetails.upiDetails = {
+          upiId: newShopForm.upiId,
+          upiProvider: newShopForm.upiProvider,
+          otherUpiProvider: newShopForm.upiProvider === 'other' ? newShopForm.otherUpiProvider : '',
+          upiMobileNumber: newShopForm.upiMobileNumber
+        };
+      }
+
       // Create a new shop object
       const newShop = {
-        ...newShopForm,
+        name: newShopForm.name,
         location: {
           address: `${newShopForm.address}, ${newShopForm.city}`,
           city: newShopForm.city,
         },
+        category: newShopForm.category,
+        owner: newShopForm.owner,
+        phone: newShopForm.phone,
+        email: newShopForm.email,
+        gstNumber: newShopForm.gstNumber,
         rating: newShopForm.rating || 0,
         reviews: newShopForm.reviews || 0,
         joinDate: new Date().toISOString(),
         status: 'active',
         verified: false,
+        meatSectorType: newShopForm.meatSectorType,
         earnings: {
           currentMonth: 0,
           previousMonth: 0,
@@ -3806,6 +4411,8 @@ const ShopPartnerDashboard = () => {
           preparationTime: 25,
           customerSatisfaction: 4.5,
         },
+        // Store payment details
+        paymentDetails: paymentDetails
       };
 
       // Upload documents if any
@@ -3849,6 +4456,20 @@ const ShopPartnerDashboard = () => {
         meatSectorType: 'None',
         rating: 0,
         reviews: 0,
+        preferredPaymentMode: 'BANK',
+        accountHolderName: '',
+        accountNumber: '',
+        confirmAccountNumber: '',
+        ifscCode: '',
+        bankName: '',
+        bankBranch: '',
+        upiId: '',
+        upiProvider: 'gpay',
+        otherUpiProvider: '',
+        upiMobileNumber: '',
+        paymentContactName: '',
+        paymentContactPhone: '',
+        paymentContactEmail: ''
       });
 
       // Reset document uploads
@@ -3895,7 +4516,6 @@ const ShopPartnerDashboard = () => {
 
   // Function to handle opening the edit shop modal
   const handleEditShop = (shop) => {
-    // Prepare address by splitting the full address
     let address = '';
     let city = shop.location?.city || '';
 
@@ -3908,6 +4528,11 @@ const ShopPartnerDashboard = () => {
         address = shop.location.address;
       }
     }
+
+    // Extract payment details from shop data
+    const paymentDetails = shop.paymentDetails || {};
+    const bankDetails = paymentDetails.bankDetails || {};
+    const upiDetails = paymentDetails.upiDetails || {};
 
     setEditShopForm({
       id: shop.id,
@@ -3922,10 +4547,33 @@ const ShopPartnerDashboard = () => {
       rating: shop.rating || 0,
       reviews: shop.reviews || 0,
       meatSectorType: shop.meatSectorType || 'None',
+
+      // Payment mode
+      preferredPaymentMode: paymentDetails.preferredPaymentMode || 'BANK',
+
+      // Bank details
+      accountHolderName: bankDetails.accountHolderName || '',
+      accountNumber: bankDetails.accountNumber || '',
+      confirmAccountNumber: bankDetails.accountNumber || '', // Pre-fill for confirmation
+      ifscCode: bankDetails.ifscCode || '',
+      bankName: bankDetails.bankName || '',
+      bankBranch: bankDetails.bankBranch || '',
+
+      // UPI details
+      upiId: upiDetails.upiId || '',
+      upiProvider: upiDetails.upiProvider || 'gpay',
+      otherUpiProvider: upiDetails.otherUpiProvider || '',
+      upiMobileNumber: upiDetails.upiMobileNumber || '',
+
+      // Contact info
+      paymentContactName: paymentDetails.paymentContactName || '',
+      paymentContactPhone: paymentDetails.paymentContactPhone || '',
+      paymentContactEmail: paymentDetails.paymentContactEmail || ''
     });
 
     setIsEditShopModalOpen(true);
   };
+
 
   // Function to handle updating a shop
   const handleUpdateShop = async (e) => {
@@ -3934,11 +4582,52 @@ const ShopPartnerDashboard = () => {
 
     try {
       // Validate required fields
-      const requiredFields = ['name', 'address', 'city', 'category', 'owner', 'phone', 'email'];
+      const requiredFields = ['name', 'address', 'city', 'category', 'owner', 'phone', 'email', 'paymentContactName', 'paymentContactPhone'];
+
+      // Add payment-specific required fields based on payment mode
+      if (editShopForm.preferredPaymentMode === 'BANK') {
+        requiredFields.push('accountHolderName', 'accountNumber', 'ifscCode', 'bankName');
+      } else {
+        requiredFields.push('upiId', 'upiMobileNumber');
+      }
+
       const missingFields = requiredFields.filter((field) => !editShopForm[field]);
 
       if (missingFields.length > 0) {
         throw new Error(`Required fields missing: ${missingFields.join(', ')}`);
+      }
+
+      // Validate account number confirmation if it's a bank transfer
+      if (editShopForm.preferredPaymentMode === 'BANK' &&
+        editShopForm.accountNumber !== editShopForm.confirmAccountNumber) {
+        throw new Error('Account number and confirmation do not match');
+      }
+
+      // Create payment details object based on selected payment mode
+      const paymentDetails = {
+        preferredPaymentMode: editShopForm.preferredPaymentMode,
+        paymentContactName: editShopForm.paymentContactName,
+        paymentContactPhone: editShopForm.paymentContactPhone,
+        paymentContactEmail: editShopForm.paymentContactEmail,
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Add appropriate payment details based on mode
+      if (editShopForm.preferredPaymentMode === 'BANK') {
+        paymentDetails.bankDetails = {
+          accountHolderName: editShopForm.accountHolderName,
+          accountNumber: editShopForm.accountNumber,
+          ifscCode: editShopForm.ifscCode,
+          bankName: editShopForm.bankName,
+          bankBranch: editShopForm.bankBranch
+        };
+      } else {
+        paymentDetails.upiDetails = {
+          upiId: editShopForm.upiId,
+          upiProvider: editShopForm.upiProvider,
+          otherUpiProvider: editShopForm.upiProvider === 'other' ? editShopForm.otherUpiProvider : '',
+          upiMobileNumber: editShopForm.upiMobileNumber
+        };
       }
 
       // Create updated shop object
@@ -3956,6 +4645,8 @@ const ShopPartnerDashboard = () => {
         rating: editShopForm.rating,
         reviews: editShopForm.reviews,
         meatSectorType: editShopForm.meatSectorType,
+        // Store payment details
+        paymentDetails: paymentDetails
       };
 
       // Update shop in Firebase
@@ -3990,6 +4681,8 @@ const ShopPartnerDashboard = () => {
       }, 3000);
     }
   };
+
+
 
   // Function to toggle shop status (activate/deactivate)
   const toggleShopStatus = async (shopId, currentStatus) => {
@@ -4678,7 +5371,49 @@ const ShopPartnerDashboard = () => {
                   </button>
                 </div>
               </div>
+              <div className="shop-detail-card payment-info">
+                <h2>Payment Information</h2>
+                <div className="payment-info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Payment Mode</span>
+                    <span className="info-value">
+                      {shop.paymentInfo?.preferredPaymentMode === 'UPI' ? 'UPI Transfer' : 'Bank Transfer'}
+                    </span>
+                  </div>
 
+                  <div className="info-item">
+                    <span className="info-label">Contact Name</span>
+                    <span className="info-value">{shop.paymentInfo?.paymentContactName || 'Not set'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Contact Phone</span>
+                    <span className="info-value">{shop.paymentInfo?.paymentContactPhone || 'Not set'}</span>
+                  </div>
+
+                  {shop.paymentInfo?.paymentContactEmail && (
+                    <div className="info-item">
+                      <span className="info-label">Contact Email</span>
+                      <span className="info-value">{shop.paymentInfo.paymentContactEmail}</span>
+                    </div>
+                  )}
+
+                  <div className="info-item">
+                    <span className="info-label">Last Updated</span>
+                    <span className="info-value">{formatDate(shop.paymentInfo?.lastUpdated || shop.joinDate)}</span>
+                  </div>
+                </div>
+
+                <div className="payment-actions">
+                  <button
+                    className="payment-action-button"
+                    onClick={() => setIsPaymentModalOpen(true)}
+                  >
+                    <Send size={16} />
+                    Initiate Payment
+                  </button>
+                </div>
+              </div>
               <div className="shop-detail-card performance-metrics">
                 <h2>Performance Metrics</h2>
                 <div className={`performance-status ${getShopPerformanceStatus(shop.performanceMetrics)}`}>
@@ -4820,6 +5555,12 @@ const ShopPartnerDashboard = () => {
                 </div>
               )}
             </div>
+            <PaymentModal
+              isOpen={isPaymentModalOpen}
+              onClose={() => setIsPaymentModalOpen(false)}
+              shopDetails={shop}
+              setNotification={setNotification}
+            />
           </div>
         )}
 
@@ -5023,7 +5764,7 @@ const ShopPartnerDashboard = () => {
                           {formatDate(order.orderDate)}
                         </td>
                         <td className="amount-cell">
-                         <div className="order-amount">{formatCurrency(calculateAmountWithoutTax(order))}</div>
+                          <div className="order-amount">{formatCurrency(calculateAmountWithoutTax(order))}</div>
                           <div className="items-count">{order.items?.length} items</div>
                         </td>
                         <td className="address-cell">
@@ -5231,11 +5972,11 @@ const ShopPartnerDashboard = () => {
                 <tr>
                   <th>Shop Name</th>
                   <th>Status</th>
-                 <th>Meat Sector</th>
+                  <th>Meat Sector</th>
                   <th>Location</th>
                   <th>Orders</th>
                   <th>Earnings</th>
-                  <th style={{left:'10px'}}>Actions</th>
+                  <th style={{ left: '10px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -5269,7 +6010,7 @@ const ShopPartnerDashboard = () => {
                         (shop.orders?.cancelled || 0)}
                     </td>
                     <td>{formatCurrency(shop.earnings?.total || 0)}</td>
-                    
+
                     <td>
                       <div className="shop-table-actions">
                         <button

@@ -1375,7 +1375,6 @@ const DeliveryManagement = () => {
                 <th>Amount</th>
                 <th>Pickup</th>
                 <th>Dropoff</th>
-                <th>Delivery Person</th>
                 <th>Status</th>
                 {/* <th>Actions</th> */}
               </tr>
@@ -1440,28 +1439,7 @@ const DeliveryManagement = () => {
                     </div>
                   </td>
                   
-                  <td className="delivery-person-cell">
-                    {delivery.deliveryPerson ? (
-                      <div className="delivery-person-wrapper">
-                        <div className="person-name">{delivery.deliveryPerson.name}</div>
-                        <div className="person-phone">{delivery.deliveryPerson.phone || '9876543210'}</div>
-                        <div className="person-rating">
-                          <Star size={14} className="star-icon" />
-                          <span>{delivery.deliveryPerson.rating || '4.5'}</span>
-                        </div>
-                        {delivery.bookingId && (
-                          <div className="booking-id">ID: {delivery.bookingId.substring(0, 8)}</div>
-                        )}
-                      </div>
-                    ) : (
-                      <button 
-                        className="assign-button"
-                        onClick={() => assignDeliveryPerson(delivery.id)}
-                      >
-                        Assign
-                      </button>
-                    )}
-                  </td>
+                  
                   
                   <td className="status-cell">
                     <div className={`status-badge ${delivery.status}`}>
