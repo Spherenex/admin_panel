@@ -580,7 +580,58 @@ app.get('/api/vendor-transfers', (req, res) => {
     }]
   });
 });
-
+// Add this near your other route handlers
+app.get('/', (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>Vendor Payment API</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+          h1 { color: #333; }
+          .endpoint { background: #f5f5f5; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+          code { background: #eee; padding: 2px 4px; border-radius: 3px; }
+        </style>
+      </head>
+      <body>
+        <h1>Vendor Payment API</h1>
+        <p>The API is running successfully. Available endpoints:</p>
+        
+        <div class="endpoint">
+          <strong>GET /api/health</strong> - Check API status
+        </div>
+        
+        <div class="endpoint">
+          <strong>GET /api/test</strong> - Test endpoint
+        </div>
+        
+        <div class="endpoint">
+          <strong>POST /api/vendor-transfer</strong> - Process a payment
+          <pre><code>
+{
+  "vendor_id": "VENDOR123",
+  "amount": "100.00",
+  "beneficiary_name": "Vendor Name",
+  "beneficiary_upi": "vendor@upi",
+  "payment_mode": "UPI",
+  "purpose": "Payment for services"
+}
+          </code></pre>
+        </div>
+        
+        <div class="endpoint">
+          <strong>GET /api/vendor-transfer-status/:merchant_ref_id</strong> - Check payment status
+        </div>
+        
+        <div class="endpoint">
+          <strong>GET /api/vendor-transfers</strong> - Get all payments
+        </div>
+        
+        <p>Last updated: ${new Date().toISOString()}</p>
+      </body>
+    </html>
+  `);
+});
 // Catch-all for undefined routes
 app.use((req, res) => {
   res.status(404).json({
