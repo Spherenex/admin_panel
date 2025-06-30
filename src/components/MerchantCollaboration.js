@@ -34,7 +34,7 @@ const sendEmailNotification = async (email, status, description) => {
       to_email: email,
       name: email.split('@')[0],
       time: new Date().toLocaleString(),
-      message: `Your merchant request has been ${status},Welcome to Zappcart`,
+      // message: `Your merchant request has been ${status},Welcome to Zappcart`,
       headers: {
         "X-Priority": "1",
         "Importance": "high"
