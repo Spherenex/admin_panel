@@ -1274,37 +1274,77 @@ const CustomerSupport = () => {
     return () => unsubscribe();
   }, [idParam, activeTab, notifiedTickets]);
 
-  // Check for new tickets and create notifications
-  const checkForNewTickets = (ticketsData) => {
-    // Get requests that we haven't notified about yet
-    const newTickets = ticketsData.filter(ticket =>
-      !notifiedTickets.includes(ticket.id) &&
-      ticket.status === 'open'
-    );
+ // This is just the relevant section to modify in your CustomerSupport.js
+// Replace the checkForNewTickets function with this improved version:
 
-    if (newTickets.length > 0) {
-      // Create notifications for new tickets
-      newTickets.forEach(ticket => {
-        console.log("Creating notification for new support ticket:", ticket.id);
+// Check for new tickets and create notifications
+const checkForNewTickets = (ticketsData) => {
+  // Skip if there's no data
+  if (!ticketsData || !Array.isArray(ticketsData) || ticketsData.length === 0) {
+    return;
+  }
 
-        // Get priority level based on issue type and time elapsed
-        const priority = getPriorityLevel(ticket);
+  // If notifiedTickets isn't initialized yet, initialize it
+  if (!notifiedTickets || !Array.isArray(notifiedTickets)) {
+    setNotifiedTickets([]);
+    return;
+  }
 
-        createSupportTicketNotification(ticket.id, {
-          customerName: ticket.customerName || ticket.customer?.fullName || 'Customer',
-          issueType: ticket.issueType || 'General Issue',
-          customerNote: ticket.customerNote || '',
-          priority: priority.level
-        });
+  // Get requests that we haven't notified about yet
+  const newTickets = ticketsData.filter(ticket =>
+    // Only create notifications for open tickets we haven't notified about yet
+    !notifiedTickets.includes(ticket.id) &&
+    ticket.status === 'open'
+  );
+
+  // Debug
+  if (newTickets.length > 0) {
+    console.log(`Found ${newTickets.length} new tickets to notify about`);
+  }
+
+  // Create notifications for new tickets (only if there are new ones)
+  if (newTickets.length > 0) {
+    // Batch updates to avoid React state update issues
+    const ticketIds = newTickets.map(ticket => ticket.id);
+    
+    // Process tickets one by one to avoid race conditions
+    newTickets.forEach(ticket => {
+      console.log("Creating notification for new support ticket:", ticket.id);
+
+      // Get priority level based on issue type and time elapsed
+      const priority = getPriorityLevel(ticket);
+
+      // Create the notification
+      createSupportTicketNotification(ticket.id, {
+        customerName: ticket.customerName || ticket.customer?.fullName || 'Customer',
+        issueType: ticket.issueType || 'General Issue',
+        customerNote: ticket.customerNote || '',
+        priority: priority.level
       });
+    });
 
-      // Update the list of notified tickets
-      setNotifiedTickets(prev => [
-        ...prev,
-        ...newTickets.map(ticket => ticket.id)
-      ]);
-    }
-  };
+    // Update the list of notified tickets (after a slight delay to ensure Firebase operations complete)
+    setTimeout(() => {
+      setNotifiedTickets(prev => [...prev, ...ticketIds]);
+    }, 500);
+  }
+};
+
+// Also add this useEffect to preserve notifiedTickets across renders
+useEffect(() => {
+  // Load notified tickets from localStorage on initial load
+  const savedNotifiedTickets = localStorage.getItem('notifiedTickets');
+  if (savedNotifiedTickets) {
+    setNotifiedTickets(JSON.parse(savedNotifiedTickets));
+  }
+}, []);
+
+// Save notifiedTickets to localStorage when it changes
+useEffect(() => {
+  if (notifiedTickets && notifiedTickets.length > 0) {
+    localStorage.setItem('notifiedTickets', JSON.stringify(notifiedTickets));
+  }
+}, [notifiedTickets]);
 
   // Fetch customers from Firebase
   useEffect(() => {

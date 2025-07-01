@@ -3642,7 +3642,7 @@ import OrderItems from './OrderItems';
 import AdminAlerts from './AdminAlerts';
 import AssignVendorModal from './AssignVendorModal';
 import { createOrderNotification } from './notificationService';
-
+import { cleanupOldNotifications } from './notificationService';
 const OrderManagement = () => {
   // Function to calculate amount without tax
   const calculateAmountWithoutTax = (order) => {
@@ -3710,7 +3710,17 @@ const OrderManagement = () => {
     setOrderIdMap(idMap);
     return idMap;
   };
-
+useEffect(() => {
+  // Run cleanup when component mounts
+  cleanupOldNotifications(30); // Keep last 30 days of notifications
+  
+  // Setup periodic cleanup (every 24 hours)
+  const cleanupInterval = setInterval(() => {
+    cleanupOldNotifications(30);
+  }, 24 * 60 * 60 * 1000);
+  
+  return () => clearInterval(cleanupInterval);
+}, []);
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -4152,72 +4162,109 @@ const OrderManagement = () => {
   };
 
   // Check for new orders and status changes
-  const checkForOrderChanges = (ordersData, idMap) => {
-    // Get any orders that were created or updated in the last 5 minutes
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+// This is just the relevant section to modify in your OrderManagement.js
+// Replace the checkForOrderChanges function with this improved version:
+
+// Check for new orders and status changes
+const checkForOrderChanges = (ordersData, idMap) => {
+  // Skip if no data
+  if (!ordersData || !Array.isArray(ordersData) || ordersData.length === 0) {
+    return;
+  }
+  
+  // If notifiedOrders isn't initialized yet, initialize it
+  if (!notifiedOrders || !Array.isArray(notifiedOrders)) {
+    setNotifiedOrders([]);
+    return;
+  }
+
+  // Get any orders that were created or updated in the last 5 minutes
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  
+  ordersData.forEach(order => {
+    // Check if this order or a status update is new
+    const orderDate = new Date(order.orderDate);
     
-    ordersData.forEach(order => {
-      // Check if this order or a status update is new
-      const orderDate = new Date(order.orderDate);
+    // Check the latest timeline event
+    const latestEvent = order.timeline && order.timeline.length > 0 
+      ? order.timeline[order.timeline.length - 1] 
+      : null;
+    
+    if (latestEvent) {
+      const eventTime = new Date(latestEvent.time);
+      const notificationKey = `${order.id}-${latestEvent.status}`;
       
-      // Check the latest timeline event
-      const latestEvent = order.timeline && order.timeline.length > 0 
-        ? order.timeline[order.timeline.length - 1] 
-        : null;
-      
-      if (latestEvent) {
-        const eventTime = new Date(latestEvent.time);
-        const notificationKey = `${order.id}-${latestEvent.status}`;
+      // If the event happened in the last 5 minutes and we haven't notified about it yet
+      if (eventTime > fiveMinutesAgo && !notifiedOrders.includes(notificationKey)) {
+        console.log("Checking order event:", notificationKey, latestEvent.status);
         
-        // If the event happened in the last 5 minutes and we haven't notified about it yet
-        if (eventTime > fiveMinutesAgo && !notifiedOrders.includes(notificationKey)) {
-          console.log("Checking order event:", notificationKey, latestEvent.status);
-          
-          // Create notifications based on event type
-          switch(latestEvent.status) {
-            case 'order_placed':
-              console.log("Creating notification for new order:", order.id);
-              createOrderNotification(order.id, 'new', {
-                ...order,
-                displayId: idMap[order.id] || order.id
-              });
-              break;
-              
-            case 'cancelled':
-              console.log("Creating notification for canceled order:", order.id);
-              createOrderNotification(order.id, 'canceled', {
-                ...order,
-                displayId: idMap[order.id] || order.id
-              });
-              break;
-              
-            case 'processing':
-              console.log("Creating notification for processing order:", order.id);
-              createOrderNotification(order.id, 'processed', {
-                ...order,
-                displayId: idMap[order.id] || order.id
-              });
-              break;
-              
-            case 'delivered':
-              console.log("Creating notification for delivered order:", order.id);
-              createOrderNotification(order.id, 'delivered', {
-                ...order,
-                displayId: idMap[order.id] || order.id
-              });
-              break;
-              
-            default:
-              // No notification for other status changes
-              break;
-          }
-          
-          // Mark this order event as notified
-          setNotifiedOrders(prev => [...prev, notificationKey]);
+        // Create notifications based on event type
+        switch(latestEvent.status) {
+          case 'order_placed':
+            console.log("Creating notification for new order:", order.id);
+            createOrderNotification(order.id, 'new', {
+              ...order,
+              displayId: idMap[order.id] || order.id
+            });
+            break;
+            
+          case 'cancelled':
+            console.log("Creating notification for canceled order:", order.id);
+            createOrderNotification(order.id, 'canceled', {
+              ...order,
+              displayId: idMap[order.id] || order.id
+            });
+            break;
+            
+          case 'processing':
+            console.log("Creating notification for processing order:", order.id);
+            createOrderNotification(order.id, 'processed', {
+              ...order,
+              displayId: idMap[order.id] || order.id
+            });
+            break;
+            
+          case 'delivered':
+            console.log("Creating notification for delivered order:", order.id);
+            createOrderNotification(order.id, 'delivered', {
+              ...order,
+              displayId: idMap[order.id] || order.id
+            });
+            break;
+            
+          default:
+            // No notification for other status changes
+            break;
         }
+        
+        // Mark this order event as notified (do this first to prevent race conditions)
+        setNotifiedOrders(prev => [...prev, notificationKey]);
       }
-    });
-  };
+    }
+  });
+};
+
+// Also add this useEffect to preserve notifiedOrders across renders
+useEffect(() => {
+  // Load notified orders from localStorage on initial load
+  const savedNotifiedOrders = localStorage.getItem('notifiedOrders');
+  if (savedNotifiedOrders) {
+    setNotifiedOrders(JSON.parse(savedNotifiedOrders));
+  }
+}, []);
+
+// Save notifiedOrders to localStorage when it changes
+useEffect(() => {
+  if (notifiedOrders && notifiedOrders.length > 0) {
+    localStorage.setItem('notifiedOrders', JSON.stringify(notifiedOrders));
+  }
+}, [notifiedOrders]);
+
+// Also fix your Firebase dependency for the main useEffect
+// Change this line in your existing code:
+// }, [notifiedOrders]);
+// To this:
+// }, []);  // Remove notifiedOrders dependency to prevent re-fetching data when we update notifiedOrders
 
   // Delete order from Firebase
   const deleteOrder = async (orderId) => {
