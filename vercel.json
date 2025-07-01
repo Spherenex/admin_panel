@@ -1,15 +1,20 @@
 {
   "version": 2,
-  "functions": {
-    "api/**/*.js": {
-      "memory": 1024,
-      "maxDuration": 10
+  "builds": [
+    {
+      "src": "functions/index.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
-    { "src": "/api/vendor-transfer", "dest": "/api/vendor-transfer.js" },
-    { "src": "/api/vendor-transfer-status/(.*)", "dest": "/api/vendor-transfer-status/[merchant_ref_id].js?merchant_ref_id=$1" },
-    { "src": "/api/vendor-transfers", "dest": "/api/vendor-transfers.js" },
-    { "src": "/api/health", "dest": "/api/health.js" }
-  ]
+    {
+      "src": "/(.*)",
+      "dest": "functions/index.js"
+    }
+  ],
+  "functions": {
+    "functions/index.js": {
+      "maxDuration": 30
+    }
+  }
 }
