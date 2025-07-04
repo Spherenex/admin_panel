@@ -8,7 +8,7 @@
 // } from 'lucide-react';
 // import '../styles/OrderItems.css'; // Assuming you have a CSS file for styles
 
-// const OrderItems = ({ items, subtotal, deliveryCharge, tax, totalAmount, formatCurrency }) => {
+// const OrderItems = ({ items, subtotal, deliveryFee, tax, totalAmount, formatCurrency }) => {
 //   const [expandedItems, setExpandedItems] = useState({});
 
 //   // If formatCurrency isn't provided, define a default implementation
@@ -97,7 +97,7 @@
 //         </div>
 //         <div className="summary-row">
 //           <span>Delivery Fee</span>
-//           <span>{formatPrice(deliveryCharge)}</span>
+//           <span>{formatPrice(deliveryFee)}</span>
 //         </div>
        
 //         <div className="summary-row total">
@@ -125,9 +125,9 @@ import {
 } from 'lucide-react';
 import '../styles/OrderItems.css'; // Assuming you have a CSS file for styles
 
-const OrderItems = ({ items, subtotal, deliveryCharge, tax, totalAmount, formatCurrency }) => {
+const OrderItems = ({ items, subtotal, deliveryFee, tax, totalAmount, formatCurrency }) => {
   const [expandedItems, setExpandedItems] = useState({});
-
+console.log(deliveryFee,'deliveryFee')
   // If formatCurrency isn't provided, define a default implementation
   const formatPrice = formatCurrency || ((amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -145,7 +145,7 @@ const OrderItems = ({ items, subtotal, deliveryCharge, tax, totalAmount, formatC
   };
 
   // Calculate total without tax
-  const totalWithoutTax = (subtotal || 0) + (deliveryCharge || 0);
+  const totalWithoutTax = (subtotal || 0) + (deliveryFee || 0);
 
   return (
     <div className="order-detail-card order-items">
@@ -217,7 +217,7 @@ const OrderItems = ({ items, subtotal, deliveryCharge, tax, totalAmount, formatC
         </div>
         <div className="summary-row">
           <span>Delivery Fee</span>
-          <span>{formatPrice(deliveryCharge)}</span>
+          <span>{formatPrice(deliveryFee)}</span>
         </div>
        
         <div className="summary-row total">
