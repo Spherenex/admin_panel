@@ -2563,3 +2563,130 @@
     transform: rotate(360deg);
   }
 }
+ .assignment-attempts-history {
+          margin-top: 16px;
+        }
+
+        .attempts-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 8px;
+        }
+
+        .attempts-table th,
+        .attempts-table td {
+          padding: 8px;
+          text-align: left;
+          border-bottom: 1px solid #eee;
+        }
+
+        .attempt-status {
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+
+        .attempt-status.expired {
+          background-color: #ffebee;
+          color: #d32f2f;
+        }
+
+        .attempt-status.accepted {
+          background-color: #e8f5e9;
+          color: #2e7d32;
+        }
+
+        .attempt-status.rejected {
+          background-color: #fce4ec;
+          color: #c2185b;
+        }
+
+        .attempt-status.pending {
+          background-color: #e3f2fd;
+          color: #1976d2;
+        }
+
+        .attempt-info {
+          font-size: 0.8rem;
+          color: #616161;
+          margin-top: 2px;
+        }
+
+        .timeout-info {
+          font-size: 0.8rem;
+          color: #ff9800;
+          margin-top: 2px;
+        }
+
+        .distance-info {
+          font-size: 0.8rem;
+          color: #388e3c;
+          margin-top: 2px;
+        }
+
+        .manual-required {
+          color: #f44336;
+          font-weight: bold;
+        }
+
+        .assign-vendor-button1 {
+          background-color: #2196f3;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 6px 12px;
+          font-size: 0.85rem;
+          cursor: pointer;
+          margin-top: 5px;
+          display: block;
+          width: 100%;
+          text-align: center;
+        }
+
+        .assign-vendor-button1.small {
+          padding: 4px 8px;
+          font-size: 0.8rem;
+        }
+
+        .assign-vendor-button1:hover {
+          background-color: #1976d2;
+        }
+
+        .assign-vendor-button1.urgent {
+          background-color: #f44336;
+          color: white;
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+          }
+        }
+
+        .customer-address {
+          font-size: 0.8rem;
+          color: #666;
+          margin-top: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 200px;
+        }
+
+        /* Make the spinning icon actually spin */
+        .spinning {
+          animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }

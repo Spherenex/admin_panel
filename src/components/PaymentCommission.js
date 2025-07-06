@@ -1621,6 +1621,9 @@
 
 
 
+
+
+
 // import React, { useState, useEffect } from 'react';
 // import {
 //   DollarSign,
@@ -1658,8 +1661,10 @@
 //   Coins,
 //   X,
 //   Shield,
-//   Send
+//   Send,
+//   Info
 // } from 'lucide-react';
+
 // import { ref, onValue, update, remove, push, set, get } from 'firebase/database';
 // import { db } from '../firebase/config';
 // import '../styles/PaymentCommission.css';
@@ -2349,7 +2354,39 @@
 
 //     fetchVendorDetails();
 //   }, [selectedVendor, orderIdMap]);
+//   useEffect(() => {
+//     if (!selectedVendor) return;
 
+//     const loadPaidItems = async () => {
+//       try {
+//         // Clear previous paid items when selecting a new vendor
+//         setPaidItems({});
+
+//         // Get payments for this vendor's items
+//         const paymentsRef = ref(db, 'payments');
+//         const paymentsSnapshot = await get(paymentsRef);
+
+//         if (paymentsSnapshot.exists()) {
+//           const payments = paymentsSnapshot.val();
+//           const newPaidItems = {};
+
+//           // Filter payments by vendor and set paid status
+//           Object.values(payments).forEach(payment => {
+//             if (payment.vendorId === selectedVendor.id && payment.status !== 'failed') {
+//               newPaidItems[payment.itemId] = true;
+//             }
+//           });
+
+//           // Update the paid items state
+//           setPaidItems(newPaidItems);
+//         }
+//       } catch (error) {
+//         console.error('Error loading payment status:', error);
+//       }
+//     };
+
+//     loadPaidItems();
+//   }, [selectedVendor, db]);
 //   const filteredTransactions = transactions.filter(transaction => {
 //     const transactionDate = new Date(transaction.date);
 //     const now = new Date();
@@ -2515,94 +2552,176 @@
 //     setIsPaymentVerificationOpen(true);
 //   };
 
-//   // Function to process payment after verification
-//   const processPayment = async (vendorDetails, paymentDetails) => {
-//     if (!currentPaymentItem) return false;
+//  // Enhanced processPayment function with better error handling and fallback options
+// const processPayment = async (vendorDetails, paymentDetails) => {
+//   if (!currentPaymentItem) return false;
 
-//     const itemId = currentPaymentItem.id;
+//   const itemId = currentPaymentItem.id;
 
-//     // Set processing state
+//   // Set processing state
+//   setProcessingPayments(prev => ({
+//     ...prev,
+//     [itemId]: true
+//   }));
+
+//   try {
+//     // Prepare data for payment transfer API
+//     const paymentApiData = {
+//       vendor_id: selectedVendor.id,
+//       amount: currentPaymentItem.totalVendorPrice,
+//       beneficiary_name: paymentDetails.preferredPaymentMode === 'BANK'
+//         ? paymentDetails.bankDetails.accountHolderName
+//         : vendorDetails.name,
+//       purpose: `Payment for ${currentPaymentItem.name} - ${currentPaymentItem.quantity} units`
+//     };
+
+//     // Add payment method specific details
+//     if (paymentDetails.preferredPaymentMode === 'BANK') {
+//       paymentApiData.payment_mode = 'NEFT'; // or 'IMPS'
+//       paymentApiData.beneficiary_account_number = paymentDetails.bankDetails.accountNumber;
+//       paymentApiData.beneficiary_ifsc = paymentDetails.bankDetails.ifscCode;
+//     } else {
+//       paymentApiData.payment_mode = 'UPI';
+//       paymentApiData.beneficiary_upi = paymentDetails.upiDetails.upiId;
+//     }
+
+//     console.log("Initiating payment transfer:", paymentApiData);
+
+//     // Try connecting to the payment API with timeout
+//     const controller = new AbortController();
+//     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+//     try {
+//       // Call payment transfer API
+//       const paymentResponse = await fetch('http://localhost:5000/api/vendor-transfer', {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify(paymentApiData),
+//         signal: controller.signal
+//       });
+      
+//       clearTimeout(timeoutId);
+//       const paymentResult = await paymentResponse.json();
+
+//       // Check if payment was successful
+//       if (paymentResult.status === 1) {
+//         // Success flow remains the same
+//         // Update paid items state
+//         setPaidItems(prev => ({
+//           ...prev,
+//           [itemId]: true
+//         }));
+
+//         // Close the verification dialog
+//         setIsPaymentVerificationOpen(false);
+
+//         // Show success notification with more details
+//         setNotification({
+//           message: `Payment of ${formatCurrency(currentPaymentItem.totalVendorPrice)} to ${vendorDetails.name} initiated successfully!`,
+//           details: `Reference ID: ${paymentResult.data.merchant_ref_id}`,
+//           type: 'success',
+//           icon: <CheckCircle size={20} />
+//         });
+
+//         // Generate a unique key for this payment
+//         const paymentKey = `payment_${Date.now()}`;
+
+//         // Store payment data in Firebase with complete details
+//         const paymentRef = ref(db, `payments/${paymentKey}`);
+//         await set(paymentRef, {
+//           paymentId: paymentKey,
+//           vendorId: selectedVendor.id,
+//           vendorName: vendorDetails.name,
+//           itemId: itemId,
+//           itemName: currentPaymentItem.name,
+//           quantity: currentPaymentItem.quantity,
+//           amount: currentPaymentItem.totalVendorPrice,
+//           paymentMethod: paymentDetails.preferredPaymentMode,
+//           paymentDetails: paymentDetails.preferredPaymentMode === 'BANK' ? {
+//             accountHolderName: paymentDetails.bankDetails.accountHolderName,
+//             accountNumber: paymentDetails.bankDetails.accountNumber,
+//             ifscCode: paymentDetails.bankDetails.ifscCode
+//           } : {
+//             upiId: paymentDetails.upiDetails.upiId
+//           },
+//           status: 'initiated',
+//           merchant_ref_id: paymentResult.data.merchant_ref_id,
+//           payout_id: paymentResult.data.payout_id || '',
+//           createdAt: new Date().toISOString(),
+//           lastUpdated: new Date().toISOString()
+//         });
+
+//         // Create a lookup by item ID for quick status checks
+//         await set(ref(db, `itemPayments/${itemId}`), {
+//           paymentId: paymentKey,
+//           status: 'initiated',
+//           merchant_ref_id: paymentResult.data.merchant_ref_id,
+//           timestamp: new Date().toISOString()
+//         });
+
+//         setTimeout(() => setNotification(null), 5000);
+//         return true;
+//       } else {
+//         // Payment failed with error from API
+//         throw new Error(paymentResult.msg || 'Payment transfer failed');
+//       }
+//     } catch (fetchError) {
+//       // Check if it's a connection error
+//       if (fetchError.name === 'AbortError' || fetchError.message.includes('Failed to fetch')) {
+//         console.error("Payment API connection error:", fetchError);
+//         throw new Error('Cannot connect to payment service. Please check if the payment server is running.');
+//       } else {
+//         throw fetchError;
+//       }
+//     }
+//   } catch (error) {
+//     console.error("Payment processing failed:", error);
+
+//     // Provide more specific error messages based on error type
+//     let errorMessage = error.message || 'An unknown error occurred';
+//     if (errorMessage.includes('Cannot connect to payment service')) {
+//       errorMessage = 'Payment server is not responding. Please ensure your backend API is running on port 5000.';
+//     }
+
+//     // Show detailed error notification
+//     setNotification({
+//       message: 'Payment Failed',
+//       details: errorMessage,
+//       type: 'error',
+//       icon: <AlertTriangle size={20} />
+//     });
+
+//     setTimeout(() => setNotification(null), 8000);
+//     return false;
+//   } finally {
+//     // Clear processing state
 //     setProcessingPayments(prev => ({
 //       ...prev,
-//       [itemId]: true
+//       [itemId]: false
 //     }));
-
-//     try {
-//       // In a real implementation, this would make an API call to your payment processor
-//       // with the verified payment details
-//       console.log("Processing payment", {
-//         vendor: vendorDetails.name,
-//         vendorId: selectedVendor.id,
-//         itemId,
-//         amount: currentPaymentItem.totalVendorPrice,
-//         paymentMode: paymentDetails.preferredPaymentMode,
-//         paymentDetails
-//       });
-
-//       // Simulate API delay for demonstration
-//       await new Promise(resolve => setTimeout(resolve, 1500));
-
-//       // Update paid items state
-//       setPaidItems(prev => ({
-//         ...prev,
-//         [itemId]: true
-//       }));
-
-//       // Close the verification dialog
-//       setIsPaymentVerificationOpen(false);
-
-//       // Show success notification
-//       setNotification({
-//         message: `Payment of ${formatCurrency(currentPaymentItem.totalVendorPrice)} to ${vendorDetails.name} successful!`,
-//         type: 'success'
-//       });
-
-//       setTimeout(() => setNotification(null), 3000);
-
-//       // Optional: Update payment status in Firebase
-//       // This would record the payment in your database
-//       const paymentRef = ref(db, `payments/${Date.now()}`);
-//       await set(paymentRef, {
-//         vendorId: selectedVendor.id,
-//         vendorName: vendorDetails.name,
-//         itemId: itemId,
-//         itemName: currentPaymentItem.name,
-//         amount: currentPaymentItem.totalVendorPrice,
-//         paymentMethod: paymentDetails.preferredPaymentMode,
-//         status: 'completed',
-//         timestamp: new Date().toISOString()
-//       });
-
-//       return true;
-
-//     } catch (error) {
-//       console.error("Payment processing failed:", error);
-
-//       // Show error notification
-//       setNotification({
-//         message: `Payment failed: ${error.message}`,
-//         type: 'error'
-//       });
-
-//       setTimeout(() => setNotification(null), 3000);
-
-//       return false;
-
-//     } finally {
-//       // Clear processing state
-//       setProcessingPayments(prev => ({
-//         ...prev,
-//         [itemId]: false
-//       }));
-//     }
-//   };
+//   }
+// };
 
 //   return (
 //     <div className="payment-commission">
 //       {/* Notification Component */}
+//       {/* Enhanced Notification Component */}
 //       {notification && (
 //         <div className={`notification notification-${notification.type}`}>
-//           <span>{notification.message}</span>
+//           <div className="notification-icon">
+//             {notification.icon || (notification.type === 'success' ?
+//               <CheckCircle size={20} /> :
+//               notification.type === 'error' ?
+//                 <AlertTriangle size={20} /> :
+//                 <Info size={20} />)
+//             }
+//           </div>
+//           <div className="notification-content">
+//             <div className="notification-title">{notification.message}</div>
+//             {notification.details && <div className="notification-details">{notification.details}</div>}
+//           </div>
 //           <button className="notification-close" onClick={() => setNotification(null)}>
 //             <X size={16} />
 //           </button>
@@ -3024,8 +3143,19 @@
 //                                 onClick={() => !paidItems[item.id] && handlePayment(item)}
 //                                 disabled={processingPayments[item.id]}
 //                               >
-//                                 {processingPayments[item.id] ? 'Processing...' :
-//                                   (paidItems[item.id] ? 'Paid' : 'Pay')}
+//                                 {processingPayments[item.id] ? (
+//                                   <span className="processing-indicator">
+//                                     <RefreshCw size={14} className="spinning" /> Processing...
+//                                   </span>
+//                                 ) : paidItems[item.id] ? (
+//                                   <span className="success-indicator">
+//                                     <CheckCircle size={14} /> Paid
+//                                   </span>
+//                                 ) : (
+//                                   <span className="pay-indicator">
+//                                     <Send size={14} /> Pay
+//                                   </span>
+//                                 )}
 //                               </button>
 //                             </td>
 //                           </tr>
@@ -3198,7 +3328,6 @@
 
 
 
-
 import React, { useState, useEffect } from 'react';
 import {
   DollarSign,
@@ -3237,7 +3366,9 @@ import {
   X,
   Shield,
   Send,
-  Info
+  Info,
+  Server,
+  Loader
 } from 'lucide-react';
 
 import { ref, onValue, update, remove, push, set, get } from 'firebase/database';
@@ -3283,6 +3414,10 @@ const PaymentCommission = () => {
   const [ordersSortBy, setOrdersSortBy] = useState('date'); // 'date', 'amount', 'customer'
   const [ordersSortOrder, setOrdersSortOrder] = useState('desc'); // 'asc', 'desc'
   const [ordersDateFilter, setOrdersDateFilter] = useState('all'); // 'all', 'today', 'week', 'month'
+
+  // Add server status state
+  const [serverStatus, setServerStatus] = useState('unknown'); // 'unknown', 'online', 'offline'
+  const [retryCount, setRetryCount] = useState(0);
 
   // Export utility functions
   const convertToCSV = (data, headers) => {
@@ -3586,6 +3721,44 @@ const PaymentCommission = () => {
     if (customSellingPrice !== undefined) return parseFloat(customSellingPrice);
     return parseFloat(item.price || vendorPrice || 0);
   };
+
+  // Check payment server status
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/health', { 
+          method: 'GET',
+          // Small timeout to avoid long waiting if server is down
+          signal: AbortSignal.timeout(3000)
+        });
+        
+        if (response.ok) {
+          console.log('Payment server is running correctly');
+          setServerStatus('online');
+        } else {
+          console.warn('Payment server returned an error response');
+          setServerStatus('offline');
+          setNotification({
+            message: 'Payment System Warning',
+            details: 'The payment server is running but may have issues. Some payment features might not work.',
+            type: 'warning',
+            icon: <AlertTriangle size={20} />
+          });
+        }
+      } catch (error) {
+        console.error('Payment server is not running or not accessible', error);
+        setServerStatus('offline');
+        setNotification({
+          message: 'Payment System Unavailable',
+          details: 'The payment server appears to be offline. Vendor payments will not work until the server is back online.',
+          type: 'error',
+          icon: <AlertTriangle size={20} />
+        });
+      }
+    };
+    
+    checkServerStatus();
+  }, []);
 
   useEffect(() => {
     const ordersRef = ref(db, 'orders');
@@ -3929,6 +4102,7 @@ const PaymentCommission = () => {
 
     fetchVendorDetails();
   }, [selectedVendor, orderIdMap]);
+  
   useEffect(() => {
     if (!selectedVendor) return;
 
@@ -3962,6 +4136,7 @@ const PaymentCommission = () => {
 
     loadPaidItems();
   }, [selectedVendor, db]);
+  
   const filteredTransactions = transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date);
     const now = new Date();
@@ -4121,16 +4296,76 @@ const PaymentCommission = () => {
 
   // Enhanced handlePayment function to open verification dialog
   const handlePayment = (item) => {
+    // If server is offline, show error and return
+    if (serverStatus === 'offline') {
+      setNotification({
+        message: 'Payment Server Offline',
+        details: 'The payment server is not accessible. Please check your server connection and try again.',
+        type: 'error',
+        icon: <AlertTriangle size={20} />
+      });
+      setTimeout(() => setNotification(null), 5000);
+      return;
+    }
+    
     // Set the current item being paid
     setCurrentPaymentItem(item);
     // Open the payment verification dialog
     setIsPaymentVerificationOpen(true);
   };
 
+  // Retry connection to payment server
+  const retryServerConnection = async () => {
+    setNotification({
+      message: 'Checking Server Connection',
+      details: 'Attempting to connect to payment server...',
+      type: 'info',
+      icon: <RefreshCw size={20} className="spinning" />
+    });
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/health', { 
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (response.ok) {
+        setServerStatus('online');
+        setNotification({
+          message: 'Connection Restored',
+          details: 'Successfully connected to payment server!',
+          type: 'success',
+          icon: <CheckCircle size={20} />
+        });
+      } else {
+        setServerStatus('offline');
+        setNotification({
+          message: 'Server Error',
+          details: 'Payment server is responding but returned an error.',
+          type: 'warning',
+          icon: <AlertTriangle size={20} />
+        });
+      }
+    } catch (error) {
+      console.error('Failed to connect to payment server:', error);
+      setServerStatus('offline');
+      setNotification({
+        message: 'Connection Failed',
+        details: 'Could not connect to payment server. Is it running?',
+        type: 'error',
+        icon: <XCircle size={20} />
+      });
+    }
+    
+    setTimeout(() => setNotification(null), 5000);
+  };
+
+  // Enhanced processPayment function with better error handling and fallback
   const processPayment = async (vendorDetails, paymentDetails) => {
     if (!currentPaymentItem) return false;
 
     const itemId = currentPaymentItem.id;
+    const MAX_RETRIES = 2;
 
     // Set processing state
     setProcessingPayments(prev => ({
@@ -4139,6 +4374,11 @@ const PaymentCommission = () => {
     }));
 
     try {
+      // Check server status first
+      if (serverStatus === 'offline') {
+        throw new Error('Payment server is not running. Please start the server and try again.');
+      }
+
       // Prepare data for payment transfer API
       const paymentApiData = {
         vendor_id: selectedVendor.id,
@@ -4161,93 +4401,148 @@ const PaymentCommission = () => {
 
       console.log("Initiating payment transfer:", paymentApiData);
 
-      // Call payment transfer API
-      const paymentResponse = await fetch('http://localhost:5000/api/vendor-transfer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(paymentApiData),
-      });
+      // Use AbortController for timeout management
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const paymentResult = await paymentResponse.json();
+      let retryAttempt = 0;
+      let success = false;
+      let error = null;
 
-      // Check if payment was successful
-      if (paymentResult.status === 1) {
-        // Update paid items state
-        setPaidItems(prev => ({
-          ...prev,
-          [itemId]: true
-        }));
+      // Attempt payment with retries
+      while (retryAttempt <= MAX_RETRIES && !success) {
+        try {
+          // Call payment transfer API with timeout
+          const paymentResponse = await fetch('http://localhost:5000/api/vendor-transfer', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(paymentApiData),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!paymentResponse.ok) {
+            const errorData = await paymentResponse.json().catch(() => ({}));
+            throw new Error(errorData.msg || `API error: ${paymentResponse.status}`);
+          }
+          
+          const paymentResult = await paymentResponse.json();
 
-        // Close the verification dialog
-        setIsPaymentVerificationOpen(false);
+          // Check if payment was successful
+          if (paymentResult.status === 1) {
+            // Update paid items state
+            setPaidItems(prev => ({
+              ...prev,
+              [itemId]: true
+            }));
 
-        // Show success notification with more details
-        setNotification({
-          message: `Payment of ${formatCurrency(currentPaymentItem.totalVendorPrice)} to ${vendorDetails.name} initiated successfully!`,
-          details: `Reference ID: ${paymentResult.data.merchant_ref_id}`,
-          type: 'success',
-          icon: <CheckCircle size={20} />
-        });
+            // Close the verification dialog
+            setIsPaymentVerificationOpen(false);
 
-        // Generate a unique key for this payment
-        const paymentKey = `payment_${Date.now()}`;
+            // Show success notification with more details
+            setNotification({
+              message: `Payment of ${formatCurrency(currentPaymentItem.totalVendorPrice)} to ${vendorDetails.name} initiated successfully!`,
+              details: `Reference ID: ${paymentResult.data.merchant_ref_id}`,
+              type: 'success',
+              icon: <CheckCircle size={20} />
+            });
 
-        // Store payment data in Firebase with complete details
-        const paymentRef = ref(db, `payments/${paymentKey}`);
-        await set(paymentRef, {
-          paymentId: paymentKey,
-          vendorId: selectedVendor.id,
-          vendorName: vendorDetails.name,
-          itemId: itemId,
-          itemName: currentPaymentItem.name,
-          quantity: currentPaymentItem.quantity,
-          amount: currentPaymentItem.totalVendorPrice,
-          paymentMethod: paymentDetails.preferredPaymentMode,
-          paymentDetails: paymentDetails.preferredPaymentMode === 'BANK' ? {
-            accountHolderName: paymentDetails.bankDetails.accountHolderName,
-            accountNumber: paymentDetails.bankDetails.accountNumber,
-            ifscCode: paymentDetails.bankDetails.ifscCode
-          } : {
-            upiId: paymentDetails.upiDetails.upiId
-          },
-          status: 'initiated',
-          merchant_ref_id: paymentResult.data.merchant_ref_id,
-          payout_id: paymentResult.data.payout_id || '',
-          createdAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString()
-        });
+            // Generate a unique key for this payment
+            const paymentKey = `payment_${Date.now()}`;
 
-        // Create a lookup by item ID for quick status checks
-        await set(ref(db, `itemPayments/${itemId}`), {
-          paymentId: paymentKey,
-          status: 'initiated',
-          merchant_ref_id: paymentResult.data.merchant_ref_id,
-          timestamp: new Date().toISOString()
-        });
+            // Store payment data in Firebase with complete details
+            const paymentRef = ref(db, `payments/${paymentKey}`);
+            await set(paymentRef, {
+              paymentId: paymentKey,
+              vendorId: selectedVendor.id,
+              vendorName: vendorDetails.name,
+              itemId: itemId,
+              itemName: currentPaymentItem.name,
+              quantity: currentPaymentItem.quantity,
+              amount: currentPaymentItem.totalVendorPrice,
+              paymentMethod: paymentDetails.preferredPaymentMode,
+              paymentDetails: paymentDetails.preferredPaymentMode === 'BANK' ? {
+                accountHolderName: paymentDetails.bankDetails.accountHolderName,
+                accountNumber: paymentDetails.bankDetails.accountNumber,
+                ifscCode: paymentDetails.bankDetails.ifscCode
+              } : {
+                upiId: paymentDetails.upiDetails.upiId
+              },
+              status: 'initiated',
+              merchant_ref_id: paymentResult.data.merchant_ref_id,
+              payout_id: paymentResult.data.payout_id || '',
+              createdAt: new Date().toISOString(),
+              lastUpdated: new Date().toISOString()
+            });
 
-        setTimeout(() => setNotification(null), 5000);
-        return true;
-      } else {
-        // Payment failed with error from API
-        throw new Error(paymentResult.msg || 'Payment transfer failed');
+            // Create a lookup by item ID for quick status checks
+            await set(ref(db, `itemPayments/${itemId}`), {
+              paymentId: paymentKey,
+              status: 'initiated',
+              merchant_ref_id: paymentResult.data.merchant_ref_id,
+              timestamp: new Date().toISOString()
+            });
+
+            setTimeout(() => setNotification(null), 5000);
+            success = true;
+            return true;
+          } else {
+            // Payment failed with error from API
+            throw new Error(paymentResult.msg || 'Payment transfer failed');
+          }
+        } catch (attemptError) {
+          retryAttempt++;
+          error = attemptError;
+          
+          // If it's a server connection error and we have retries left
+          if ((attemptError.name === 'AbortError' || 
+               attemptError.message.includes('Failed to fetch') || 
+               attemptError.message.includes('network error')) && 
+              retryAttempt <= MAX_RETRIES) {
+            
+            console.log(`Retry attempt ${retryAttempt}/${MAX_RETRIES} after connection error`);
+            // Wait a bit before retrying (exponential backoff)
+            await new Promise(r => setTimeout(r, retryAttempt * 1000));
+            continue;
+          } else {
+            // Either not a connection error or out of retries
+            break;
+          }
+        }
+      }
+
+      // If we get here with no success, throw the last error
+      if (!success && error) {
+        throw error;
       }
 
     } catch (error) {
       console.error("Payment processing failed:", error);
+      
+      // Provide more specific error messages based on error type
+      let errorMessage = error.message || 'An unknown error occurred';
+      let errorType = 'error';
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Payment request timed out. The server might be busy or not responding.';
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('network error')) {
+        errorMessage = 'Cannot connect to payment server. Please check if the server is running on port 5000.';
+        setServerStatus('offline');
+      }
 
       // Show detailed error notification
       setNotification({
         message: 'Payment Failed',
-        details: error.message || 'An unknown error occurred',
-        type: 'error',
+        details: errorMessage,
+        type: errorType,
         icon: <AlertTriangle size={20} />
       });
 
-      setTimeout(() => setNotification(null), 5000);
+      setTimeout(() => setNotification(null), 8000);
       return false;
-
     } finally {
       // Clear processing state
       setProcessingPayments(prev => ({
@@ -4280,6 +4575,21 @@ const PaymentCommission = () => {
           </button>
         </div>
       )}
+
+      {/* Server Status Indicator */}
+      <div className={`server-status-indicator ${serverStatus}`}>
+        <Server size={16} />
+        <span className="status-text">
+          {serverStatus === 'online' ? 'Payment Server Online' : 
+           serverStatus === 'offline' ? 'Payment Server Offline' : 
+           'Checking Server Status...'}
+        </span>
+        {serverStatus === 'offline' && (
+          <button className="retry-button" onClick={retryServerConnection}>
+            <RefreshCw size={14} /> Retry Connection
+          </button>
+        )}
+      </div>
 
       {/* Payment Verification Dialog */}
       <PaymentVerificationDialog
@@ -4692,9 +5002,9 @@ const PaymentCommission = () => {
                             </td>
                             <td>
                               <button
-                                className={`pay-button ${paidItems[item.id] ? 'paid' : ''}`}
+                                className={`pay-button ${paidItems[item.id] ? 'paid' : ''} ${serverStatus === 'offline' ? 'disabled' : ''}`}
                                 onClick={() => !paidItems[item.id] && handlePayment(item)}
-                                disabled={processingPayments[item.id]}
+                                disabled={processingPayments[item.id] || serverStatus === 'offline'}
                               >
                                 {processingPayments[item.id] ? (
                                   <span className="processing-indicator">
@@ -4703,6 +5013,10 @@ const PaymentCommission = () => {
                                 ) : paidItems[item.id] ? (
                                   <span className="success-indicator">
                                     <CheckCircle size={14} /> Paid
+                                  </span>
+                                ) : serverStatus === 'offline' ? (
+                                  <span className="offline-indicator">
+                                    <AlertTriangle size={14} /> Server Offline
                                   </span>
                                 ) : (
                                   <span className="pay-indicator">
