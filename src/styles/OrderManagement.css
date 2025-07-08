@@ -2631,7 +2631,7 @@
         }
 
         .assign-vendor-button1 {
-          background-color: #2196f3;
+          background-color: #f87f6a;
           color: white;
           border: none;
           border-radius: 4px;
@@ -2650,7 +2650,7 @@
         }
 
         .assign-vendor-button1:hover {
-          background-color: #1976d2;
+          background-color: #f44336;
         }
 
         .assign-vendor-button1.urgent {
@@ -2671,7 +2671,7 @@
           }
         }
 
-        .customer-address {
+        .customer-address1 {
           font-size: 0.8rem;
           color: #666;
           margin-top: 4px;
