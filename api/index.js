@@ -511,6 +511,7 @@ app.use(cors({
     'http://127.0.0.1:5174', 
     'http://localhost:3000',
     'https://admin-panel-mu-sepia.vercel.app', // Added Vercel deployment URL
+    'https://admin-panel-b7ji.vercel.app',
     process.env.FRONTEND_URL, // For any additional deployment URLs
   ].filter(Boolean), // Removes any undefined/null entries
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
