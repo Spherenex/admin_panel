@@ -1,3 +1,7 @@
+
+
+
+
 // import React from 'react';
 // import {
 //   Star,
@@ -13,7 +17,7 @@
 // } from 'lucide-react';
 // import OrderItems from './OrderItems';
 
-// const OrderDetails = ({
+// const Neworder = ({
 //   order,
 //   orderIdMap,
 //   formatDate,
@@ -67,6 +71,51 @@
 //     );
 //   };
 
+//   // Helper function to render selected categories
+//   const renderSelectedCategories = (vendorObj) => {
+//     if (!vendorObj) return null;
+    
+//     // Check for selectedCategories in different possible locations
+//     const selectedCategories = vendorObj.selectedCategories || vendorObj.shopDetails?.selectedCategories;
+    
+//     if (!selectedCategories) {
+//       console.log('No selectedCategories found for vendor:', vendorObj.name);
+//       return null;
+//     }
+    
+//     // Get all categories that are set to true
+//     const supportedCategories = Object.entries(selectedCategories)
+//       .filter(([_, isSelected]) => isSelected === true)
+//       .map(([key]) => key);
+    
+//     if (supportedCategories.length === 0) {
+//       console.log('No true categories found for vendor:', vendorObj.name);
+//       return null;
+//     }
+    
+//     // Format category names for display (convert from camelCase or snake_case to Title Case)
+//     const formattedCategories = supportedCategories.map(category => {
+//       // Replace underscores and hyphens with spaces
+//       const withSpaces = category.replace(/[_-]/g, ' ');
+//       // Capitalize first letter of each word
+//       return withSpaces
+//         .split(' ')
+//         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+//         .join(' ');
+//     });
+    
+//     return (
+//       <div className="supported-categories">
+//         <p><strong>Supported Categories:</strong></p>
+//         <div className="categories-list">
+//           {formattedCategories.map((category, index) => (
+//             <span key={index} className="category-tag">{category}</span>
+//           ))}
+//         </div>
+//       </div>
+//     );
+//   };
+
 //   return (
 //     <div className="order-detail-wrapper">
 //       <div className="order-detail-header">
@@ -98,6 +147,8 @@
 //               <p><strong>Name:</strong> {order.vendor.name}</p>
 //               <p><strong>Rating:</strong> {order.vendor.rating || 'N/A'} <Star size={14} className="star-icon" /></p>
 //               <p><strong>Address:</strong> {order.vendor.location?.address}</p>
+//               {console.log('Vendor data in Neworder:', order.vendor)}
+//               {renderSelectedCategories(order.vendor)}
 //             </>
 //           ) : order.assignedVendor ? (
 //             <>
@@ -116,6 +167,8 @@
 //               <p><strong>Status:</strong> <span className={`status-text ${order.assignedVendor.status === 'active' ? 'active-status' : 'inactive-status'}`}>
 //                 {order.assignedVendor.status === 'active' ? 'Active' : 'Inactive'}
 //               </span></p>
+//               {console.log('Assigned vendor data in Neworder:', order.assignedVendor)}
+//               {renderSelectedCategories(order.assignedVendor)}
 //               {order.status === 'pending_vendor_confirmation' && order.autoAssignExpiresAt && (
 //                 <div className="confirmation-timer">
 //                   <AlertTriangle size={14} className="timer-icon" />
@@ -216,24 +269,6 @@
 //             ))}
 //           </div>
 //         </div>
-
-//         {order.status !== 'delivered' && order.status !== 'cancelled' && (
-//           <div className="order-actions">
-//             <button className="cancel-order-button" onClick={() => cancelOrder(order.id)}>
-//               Cancel Order & Initiate Refund
-//             </button>
-            
-//             {!order.vendor && (
-//               <button 
-//                 className="assign-vendor-button1" 
-//                 onClick={() => openAssignVendorModal(order.id)}
-//               >
-//                 {order.status === 'pending_manual_assignment' ? 'Assign Vendor (Required)' : 'Assign Vendor'}
-//               </button>
-//             )}
-//           </div>
-//         )}
-
 //         {order.status === 'cancelled' && (
 //           <div className="refund-info order-detail-card">
 //             <h2>Refund Information</h2>
@@ -252,7 +287,9 @@
 //   );
 // };
 
-// export default OrderDetails;
+// export default Neworder;
+
+
 
 
 
@@ -523,24 +560,6 @@ const Neworder = ({
             ))}
           </div>
         </div>
-
-        {/* {order.status !== 'delivered' && order.status !== 'cancelled' && (
-          <div className="order-actions">
-            <button className="cancel-order-button" onClick={() => cancelOrder(order.id)}>
-              Cancel Order & Initiate Refund
-            </button>
-            
-            {!order.vendor && (
-              <button 
-                className="assign-vendor-button1" 
-                onClick={() => openAssignVendorModal(order.id)}
-              >
-                {order.status === 'pending_manual_assignment' ? 'Assign Vendor (Required)' : 'Assign Vendor'}
-              </button>
-            )}
-          </div>
-        )} */}
-
         {order.status === 'cancelled' && (
           <div className="refund-info order-detail-card">
             <h2>Refund Information</h2>

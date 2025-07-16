@@ -538,3 +538,153 @@
     flex-direction: column;
   }
 }
+/* Add these styles to your MerchantCollaboration.css file */
+
+/* WhatsApp Button Styles */
+.contact-action-button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.whatsapp-button {
+  background-color: #25D366;
+  color: white;
+}
+
+.whatsapp-button:hover {
+  background-color: #128C7E;
+}
+
+/* Notification Options */
+.notification-options {
+  margin: 15px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.notification-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.notification-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Notification Status */
+.notification-status {
+  margin-top: 15px;
+}
+
+.notification-sent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.email-sent {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border: 1px solid #91d5ff;
+}
+
+.sms-sent {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+/* Improve the general appearance of response form */
+.response-form {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.response-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.3s;
+}
+
+.response-textarea:focus {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  outline: none;
+}
+
+.response-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.approve-button, .reject-button {
+  flex: 1;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.approve-button {
+  background-color: #52c41a;
+  color: white;
+}
+
+.approve-button:hover {
+  background-color: #389e0d;
+}
+
+.reject-button {
+  background-color: #ff4d4f;
+  color: white;
+}
+
+.reject-button:hover {
+  background-color: #cf1322;
+}
+
+.approve-button:disabled, .reject-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
