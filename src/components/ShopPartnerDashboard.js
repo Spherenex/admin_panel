@@ -4752,7 +4752,7 @@ const ShopPartnerDashboard = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const calculateAmountWithoutTax = (order) => {
-    return (order.subtotal || 0) + (order.deliveryCharge || 0);
+    return (order.totalAmount);
   };
 
   // Enhanced newShopForm with login credentials

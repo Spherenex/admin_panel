@@ -1173,7 +1173,8 @@ import * as XLSX from 'xlsx';
 const ReportsAnalytics = () => {
   // Function to calculate amount without tax
   const calculateAmountWithoutTax = (order) => {
-    return (order.subtotal || 0) + (order.deliveryCharge || 0);
+    // return (order.subtotal || 0) + (order.deliveryCharge || 0);
+    return (order.totalAmount);
   };
 
   // State for dashboard data

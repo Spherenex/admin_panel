@@ -31,16 +31,16 @@
 // const DeliveryManagement = () => {
 //   // State for active tab
 //   const [activeTab, setActiveTab] = useState('all');
-  
+
 //   // State for search term
 //   const [searchTerm, setSearchTerm] = useState('');
-  
+
 //   // State for deliveries
 //   const [deliveries, setDeliveries] = useState([]);
-  
+
 //   // State for loading
 //   const [loading, setLoading] = useState(true);
-  
+
 //   // State for error
 //   const [error, setError] = useState('');
 
@@ -198,22 +198,22 @@
 //   // Apply date filter to deliveries
 //   const getDateFilteredDeliveries = (deliveriesList) => {
 //     if (dateFilter === 'all') return deliveriesList;
-    
+
 //     const today = new Date();
 //     today.setHours(0, 0, 0, 0);
-    
+
 //     const yesterday = new Date(today);
 //     yesterday.setDate(yesterday.getDate() - 1);
-    
+
 //     const lastWeekStart = new Date(today);
 //     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-    
+
 //     const lastMonthStart = new Date(today);
 //     lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
-    
+
 //     return deliveriesList.filter(delivery => {
 //       const orderDate = new Date(delivery.timestamps.orderDate);
-      
+
 //       switch (dateFilter) {
 //         case 'today':
 //           return orderDate >= today;
@@ -226,7 +226,7 @@
 //         case 'custom':
 //           const startDate = customDateRange.start ? new Date(customDateRange.start) : null;
 //           const endDate = customDateRange.end ? new Date(customDateRange.end) : null;
-          
+
 //           if (startDate && endDate) {
 //             // Set end date to end of day
 //             endDate.setHours(23, 59, 59, 999);
@@ -248,7 +248,7 @@
 //   const getSortedDeliveries = (deliveriesList) => {
 //     return [...deliveriesList].sort((a, b) => {
 //       let comparison = 0;
-      
+
 //       switch (sortBy) {
 //         case 'date':
 //           comparison = new Date(a.timestamps.orderDate) - new Date(b.timestamps.orderDate);
@@ -268,7 +268,7 @@
 //         default:
 //           comparison = 0;
 //       }
-      
+
 //       return sortDirection === 'asc' ? comparison : -comparison;
 //     });
 //   };
@@ -288,10 +288,10 @@
 //       }
 //       return true;
 //     });
-    
+
 //     // Apply date filtering
 //     filtered = getDateFilteredDeliveries(filtered);
-    
+
 //     // Apply sorting
 //     return getSortedDeliveries(filtered);
 //   };
@@ -362,16 +362,16 @@
 //     try {
 //       // Extract the orderId from deliveryId (removing 'DEL-' prefix)
 //       const orderId = deliveryId.replace('DEL-', '');
-      
+
 //       // Set the order status to "assigning_delivery" first
 //       const orderRef = ref(db, `orders/${orderId}`);
 //       await update(orderRef, {
 //         status: 'assigning_delivery'
 //       });
-      
+
 //       // Simulate API call delay (would be a backend call in production)
 //       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
 //       // Delivery partners (same as in VendorOrdersPage)
 //       const deliveryPartners = [
 //         { id: 'DP001', name: 'Rahul Kumar', phone: '9876543210', rating: 4.8 },
@@ -380,24 +380,24 @@
 //         { id: 'DP004', name: 'Neha Sharma', phone: '9876543213', rating: 4.6 },
 //         { id: 'DP005', name: 'Raj Verma', phone: '9876543214', rating: 4.8 }
 //       ];
-      
+
 //       // Select a random delivery partner
 //       const selectedPartner = deliveryPartners[Math.floor(Math.random() * deliveryPartners.length)];
-      
+
 //       // Generate a tracking ID
 //       const trackingId = 'BOOK' + Math.floor(100000 + Math.random() * 900000);
-      
+
 //       // Calculate estimated delivery time (30 min from now)
 //       const estimatedDeliveryTime = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-      
+
 //       // Get the order to update timeline
 //       const orderSnapshot = await get(orderRef);
 //       if (!orderSnapshot.exists()) {
 //         throw new Error('Order not found');
 //       }
-      
+
 //       const orderData = orderSnapshot.val();
-      
+
 //       // Update order with delivery information
 //       const updatedTimeline = [
 //         ...(orderData.timeline || []),
@@ -407,7 +407,7 @@
 //           note: `Delivery assigned to ${selectedPartner.name} - Tracking ID: ${trackingId}`
 //         }
 //       ];
-      
+
 //       await update(orderRef, {
 //         status: 'delivery_assigned',
 //         delivery: {
@@ -422,14 +422,14 @@
 //         },
 //         timeline: updatedTimeline
 //       });
-      
+
 //       // Alert success (in production, this should be a more elegant notification)
 //       alert(`Delivery for ${deliveryId} assigned to ${selectedPartner.name}. Tracking ID: ${trackingId}`);
-      
+
 //     } catch (error) {
 //       console.error('Error assigning delivery:', error);
 //       alert(`Failed to assign delivery: ${error.message}`);
-      
+
 //       // Revert status if assignment fails
 //       try {
 //         const orderId = deliveryId.replace('DEL-', '');
@@ -448,15 +448,15 @@
 //     try {
 //       const orderId = deliveryId.replace('DEL-', '');
 //       const orderRef = ref(db, `orders/${orderId}`);
-      
+
 //       // Get current order data
 //       const snapshot = await get(orderRef);
 //       if (!snapshot.exists()) {
 //         throw new Error('Order not found');
 //       }
-      
+
 //       const orderData = snapshot.val();
-      
+
 //       // Update timeline
 //       const updatedTimeline = [
 //         ...(orderData.timeline || []),
@@ -466,16 +466,16 @@
 //           note: 'Order is out for delivery'
 //         }
 //       ];
-      
+
 //       // Update order status
 //       await update(orderRef, {
 //         status: 'out_for_delivery',
 //         outForDeliveryAt: new Date().toISOString(),
 //         timeline: updatedTimeline
 //       });
-      
+
 //       alert(`Order ${deliveryId} marked as out for delivery`);
-      
+
 //     } catch (error) {
 //       console.error('Error updating delivery status:', error);
 //       alert(`Failed to update status: ${error.message}`);
@@ -487,15 +487,15 @@
 //     try {
 //       const orderId = deliveryId.replace('DEL-', '');
 //       const orderRef = ref(db, `orders/${orderId}`);
-      
+
 //       // Get current order data
 //       const snapshot = await get(orderRef);
 //       if (!snapshot.exists()) {
 //         throw new Error('Order not found');
 //       }
-      
+
 //       const orderData = snapshot.val();
-      
+
 //       // Update timeline
 //       const updatedTimeline = [
 //         ...(orderData.timeline || []),
@@ -505,16 +505,16 @@
 //           note: 'Order delivered successfully'
 //         }
 //       ];
-      
+
 //       // Update order status
 //       await update(orderRef, {
 //         status: 'delivered',
 //         deliveredAt: new Date().toISOString(),
 //         timeline: updatedTimeline
 //       });
-      
+
 //       alert(`Order ${deliveryId} marked as delivered`);
-      
+
 //     } catch (error) {
 //       console.error('Error updating delivery status:', error);
 //       alert(`Failed to update status: ${error.message}`);
@@ -524,10 +524,10 @@
 //   return (
 //     <div className="delivery-management">
 //       <h1>Delivery Management</h1>
-    
-      
+
+
 //       {error && <div className="error-message">{error}</div>}
-      
+
 //       <div className="search-container">
 //         <Search className="search-icon" size={18} />
 //         <input 
@@ -538,7 +538,7 @@
 //           className="search-input"
 //         />
 //       </div>
-      
+
 //       <div className="filter-tabs">
 //         <button 
 //           className={`filter-tab ${activeTab === 'all' ? 'active' : ''}`}
@@ -597,7 +597,7 @@
 //             <option value="custom">Custom Range</option>
 //           </select>
 //         </div>
-        
+
 //         <div className="sort-by">
 //           <span className="sort-label">Sort By:</span>
 //           <button 
@@ -614,7 +614,7 @@
 //           </button>
 //         </div>
 //       </div>
-      
+
 //       {loading ? (
 //         <div className="loading-message">Loading deliveries...</div>
 //       ) : filteredDeliveries.length > 0 ? (
@@ -645,23 +645,23 @@
 //                       </div>
 //                     </div>
 //                   </td>
-                  
+
 //                   <td className="customer-cell">
 //                     <div className="customer-name">{delivery.customerName}</div>
 //                     <div className="customer-phone">{delivery.customerPhone}</div>
 //                   </td>
-                  
+
 //                   <td className="date-cell">
 //                     {formatShortDate(delivery.timestamps.orderDate)}
 //                   </td>
-                  
+
 //                   <td className="amount-cell">
 //                     <div className="amount-wrapper">
 //                       <span className="amount-value">₹{Math.round(delivery.totalAmount)}</span>
 //                       <span className="items-count">{delivery.itemCount} items</span>
 //                     </div>
 //                   </td>
-                  
+
 //                   <td className="pickup-cell">
 //                     <div className="shop-name-wrapper">
 //                       {delivery.shopName ? (
@@ -678,7 +678,7 @@
 //                       )}
 //                     </div>
 //                   </td>
-                  
+
 //                   <td className="dropoff-cell">
 //                     {/* Modified to avoid showing tooltip on hover */}
 //                     <div className="location-wrapper">
@@ -692,7 +692,7 @@
 //                       </div>
 //                     </div>
 //                   </td>
-                  
+
 //                   <td className="delivery-person-cell">
 //                     {delivery.deliveryPerson ? (
 //                       <div className="delivery-person-wrapper">
@@ -715,14 +715,14 @@
 //                       </button>
 //                     )}
 //                   </td>
-                  
+
 //                   <td className="status-cell">
 //                     <div className={`status-badge ${delivery.status}`}>
 //                       {getStatusIcon(delivery.status)}
 //                       <span>{getStatusText(delivery.status)}</span>
 //                     </div>
 //                   </td>
-                  
+
 //                 </tr>
 //               ))}
 //             </tbody>
@@ -743,11 +743,11 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Truck, 
-  MapPin, 
-  User, 
-  Clock, 
+import {
+  Truck,
+  MapPin,
+  User,
+  Clock,
   Package,
   Calendar,
   Search,
@@ -771,21 +771,23 @@ import '../styles/DeliveryManagement.css';
 const DeliveryManagement = () => {
   // Function to calculate amount without tax
   const calculateAmountWithoutTax = (order) => {
-    return (order.subtotal || 0) + (order.deliveryCharge || 0);
+    // return (order.subtotal || 0) + (order.deliveryCharge || 0);
+    return (order.totalAmount);
+
   };
 
   // State for active tab
   const [activeTab, setActiveTab] = useState('all');
-  
+
   // State for search term
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // State for deliveries
   const [deliveries, setDeliveries] = useState([]);
-  
+
   // State for loading
   const [loading, setLoading] = useState(true);
-  
+
   // State for error
   const [error, setError] = useState('');
 
@@ -945,22 +947,22 @@ const DeliveryManagement = () => {
   // Apply date filter to deliveries
   const getDateFilteredDeliveries = (deliveriesList) => {
     if (dateFilter === 'all') return deliveriesList;
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const lastWeekStart = new Date(today);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-    
+
     const lastMonthStart = new Date(today);
     lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
-    
+
     return deliveriesList.filter(delivery => {
       const orderDate = new Date(delivery.timestamps.orderDate);
-      
+
       switch (dateFilter) {
         case 'today':
           return orderDate >= today;
@@ -973,7 +975,7 @@ const DeliveryManagement = () => {
         case 'custom':
           const startDate = customDateRange.start ? new Date(customDateRange.start) : null;
           const endDate = customDateRange.end ? new Date(customDateRange.end) : null;
-          
+
           if (startDate && endDate) {
             // Set end date to end of day
             endDate.setHours(23, 59, 59, 999);
@@ -995,7 +997,7 @@ const DeliveryManagement = () => {
   const getSortedDeliveries = (deliveriesList) => {
     return [...deliveriesList].sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'date':
           comparison = new Date(a.timestamps.orderDate) - new Date(b.timestamps.orderDate);
@@ -1015,7 +1017,7 @@ const DeliveryManagement = () => {
         default:
           comparison = 0;
       }
-      
+
       return sortDirection === 'asc' ? comparison : -comparison;
     });
   };
@@ -1026,19 +1028,19 @@ const DeliveryManagement = () => {
       if (activeTab !== 'all' && delivery.status !== activeTab) {
         return false;
       }
-      if (searchTerm && 
-          !delivery.id.toLowerCase().includes(searchTerm.toLowerCase()) && 
-          !delivery.displayOrderId.toLowerCase().includes(searchTerm.toLowerCase()) && 
-          !delivery.customerName.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          !delivery.shopName?.toLowerCase().includes(searchTerm.toLowerCase())) {
+      if (searchTerm &&
+        !delivery.id.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !delivery.displayOrderId.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !delivery.customerName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !delivery.shopName?.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
       }
       return true;
     });
-    
+
     // Apply date filtering
     filtered = getDateFilteredDeliveries(filtered);
-    
+
     // Apply sorting
     return getSortedDeliveries(filtered);
   };
@@ -1048,9 +1050,9 @@ const DeliveryManagement = () => {
   // Function to format date
   const formatDate = (dateString) => {
     if (!dateString) return 'Not yet';
-    const options = { 
-      year: 'numeric', 
-      month: 'short', 
+    const options = {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -1061,9 +1063,9 @@ const DeliveryManagement = () => {
   // Function to format short date (Jun 4, 2025, 04:34 PM)
   const formatShortDate = (dateString) => {
     if (!dateString) return 'Not yet';
-    const options = { 
-      year: 'numeric', 
-      month: 'short', 
+    const options = {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -1082,7 +1084,7 @@ const DeliveryManagement = () => {
 
   // Function to get status text
   const getStatusText = (status) => {
-    switch(status) {
+    switch (status) {
       case 'pending': return 'Pending';
       case 'assigned': return 'Assigned';
       case 'in_progress': return 'In Progress';
@@ -1094,7 +1096,7 @@ const DeliveryManagement = () => {
 
   // Function to get status icon
   const getStatusIcon = (status) => {
-    switch(status) {
+    switch (status) {
       case 'pending': return <Clock className="status-icon pending" size={16} />;
       case 'assigned': return <User className="status-icon assigned" size={16} />;
       case 'in_progress': return <Truck className="status-icon in-progress" size={16} />;
@@ -1109,16 +1111,16 @@ const DeliveryManagement = () => {
     try {
       // Extract the orderId from deliveryId (removing 'DEL-' prefix)
       const orderId = deliveryId.replace('DEL-', '');
-      
+
       // Set the order status to "assigning_delivery" first
       const orderRef = ref(db, `orders/${orderId}`);
       await update(orderRef, {
         status: 'assigning_delivery'
       });
-      
+
       // Simulate API call delay (would be a backend call in production)
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Delivery partners (same as in VendorOrdersPage)
       const deliveryPartners = [
         { id: 'DP001', name: 'Rahul Kumar', phone: '9876543210', rating: 4.8 },
@@ -1127,24 +1129,24 @@ const DeliveryManagement = () => {
         { id: 'DP004', name: 'Neha Sharma', phone: '9876543213', rating: 4.6 },
         { id: 'DP005', name: 'Raj Verma', phone: '9876543214', rating: 4.8 }
       ];
-      
+
       // Select a random delivery partner
       const selectedPartner = deliveryPartners[Math.floor(Math.random() * deliveryPartners.length)];
-      
+
       // Generate a tracking ID
       const trackingId = 'BOOK' + Math.floor(100000 + Math.random() * 900000);
-      
+
       // Calculate estimated delivery time (30 min from now)
       const estimatedDeliveryTime = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-      
+
       // Get the order to update timeline
       const orderSnapshot = await get(orderRef);
       if (!orderSnapshot.exists()) {
         throw new Error('Order not found');
       }
-      
+
       const orderData = orderSnapshot.val();
-      
+
       // Update order with delivery information
       const updatedTimeline = [
         ...(orderData.timeline || []),
@@ -1154,7 +1156,7 @@ const DeliveryManagement = () => {
           note: `Delivery assigned to ${selectedPartner.name} - Tracking ID: ${trackingId}`
         }
       ];
-      
+
       await update(orderRef, {
         status: 'delivery_assigned',
         delivery: {
@@ -1169,14 +1171,14 @@ const DeliveryManagement = () => {
         },
         timeline: updatedTimeline
       });
-      
+
       // Alert success (in production, this should be a more elegant notification)
       alert(`Delivery for ${deliveryId} assigned to ${selectedPartner.name}. Tracking ID: ${trackingId}`);
-      
+
     } catch (error) {
       console.error('Error assigning delivery:', error);
       alert(`Failed to assign delivery: ${error.message}`);
-      
+
       // Revert status if assignment fails
       try {
         const orderId = deliveryId.replace('DEL-', '');
@@ -1195,15 +1197,15 @@ const DeliveryManagement = () => {
     try {
       const orderId = deliveryId.replace('DEL-', '');
       const orderRef = ref(db, `orders/${orderId}`);
-      
+
       // Get current order data
       const snapshot = await get(orderRef);
       if (!snapshot.exists()) {
         throw new Error('Order not found');
       }
-      
+
       const orderData = snapshot.val();
-      
+
       // Update timeline
       const updatedTimeline = [
         ...(orderData.timeline || []),
@@ -1213,16 +1215,16 @@ const DeliveryManagement = () => {
           note: 'Order is out for delivery'
         }
       ];
-      
+
       // Update order status
       await update(orderRef, {
         status: 'out_for_delivery',
         outForDeliveryAt: new Date().toISOString(),
         timeline: updatedTimeline
       });
-      
+
       alert(`Order ${deliveryId} marked as out for delivery`);
-      
+
     } catch (error) {
       console.error('Error updating delivery status:', error);
       alert(`Failed to update status: ${error.message}`);
@@ -1234,15 +1236,15 @@ const DeliveryManagement = () => {
     try {
       const orderId = deliveryId.replace('DEL-', '');
       const orderRef = ref(db, `orders/${orderId}`);
-      
+
       // Get current order data
       const snapshot = await get(orderRef);
       if (!snapshot.exists()) {
         throw new Error('Order not found');
       }
-      
+
       const orderData = snapshot.val();
-      
+
       // Update timeline
       const updatedTimeline = [
         ...(orderData.timeline || []),
@@ -1252,16 +1254,16 @@ const DeliveryManagement = () => {
           note: 'Order delivered successfully'
         }
       ];
-      
+
       // Update order status
       await update(orderRef, {
         status: 'delivered',
         deliveredAt: new Date().toISOString(),
         timeline: updatedTimeline
       });
-      
+
       alert(`Order ${deliveryId} marked as delivered`);
-      
+
     } catch (error) {
       console.error('Error updating delivery status:', error);
       alert(`Failed to update status: ${error.message}`);
@@ -1271,13 +1273,13 @@ const DeliveryManagement = () => {
   return (
     <div className="delivery-management">
       <h1>Delivery Management</h1>
-    
-      
+
+
       {error && <div className="error-message">{error}</div>}
-      
+
       <div className="search-container">
         <Search className="search-icon" size={18} />
-        <input 
+        <input
           type="text"
           placeholder="Search by delivery ID, order ID..."
           value={searchTerm}
@@ -1285,39 +1287,39 @@ const DeliveryManagement = () => {
           className="search-input"
         />
       </div>
-      
+
       <div className="filter-tabs">
-        <button 
+        <button
           className={`filter-tab ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => setActiveTab('all')}
         >
           All Deliveries
         </button>
-        <button 
+        <button
           className={`filter-tab ${activeTab === 'pending' ? 'active' : ''}`}
           onClick={() => setActiveTab('pending')}
         >
           Pending
         </button>
-        <button 
+        <button
           className={`filter-tab ${activeTab === 'assigned' ? 'active' : ''}`}
           onClick={() => setActiveTab('assigned')}
         >
           Assigned
         </button>
-        <button 
+        <button
           className={`filter-tab ${activeTab === 'in_progress' ? 'active' : ''}`}
           onClick={() => setActiveTab('in_progress')}
         >
           In Progress
         </button>
-        <button 
+        <button
           className={`filter-tab ${activeTab === 'delivered' ? 'active' : ''}`}
           onClick={() => setActiveTab('delivered')}
         >
           Delivered
         </button>
-        <button 
+        <button
           className={`filter-tab ${activeTab === 'failed' ? 'active' : ''}`}
           onClick={() => setActiveTab('failed')}
         >
@@ -1331,8 +1333,8 @@ const DeliveryManagement = () => {
             <Calendar size={16} />
             Date Filter:
           </span>
-          <select 
-            value={dateFilter} 
+          <select
+            value={dateFilter}
             onChange={(e) => handleDateFilterChange(e.target.value)}
             className="date-filter-select"
           >
@@ -1344,16 +1346,16 @@ const DeliveryManagement = () => {
             <option value="custom">Custom Range</option>
           </select>
         </div>
-        
+
         <div className="sort-by">
           <span className="sort-label">Sort By:</span>
-          <button 
+          <button
             className={`sort-button ${sortBy === 'date' ? 'active' : ''}`}
             onClick={() => handleSortChange('date')}
           >
             Date {sortBy === 'date' && (sortDirection === 'asc' ? '↑' : '↓')}
           </button>
-          <button 
+          <button
             className={`sort-button ${sortBy === 'amount' ? 'active' : ''}`}
             onClick={() => handleSortChange('amount')}
           >
@@ -1361,7 +1363,7 @@ const DeliveryManagement = () => {
           </button>
         </div>
       </div>
-      
+
       {loading ? (
         <div className="loading-message">Loading deliveries...</div>
       ) : filteredDeliveries.length > 0 ? (
@@ -1391,23 +1393,23 @@ const DeliveryManagement = () => {
                       </div>
                     </div>
                   </td>
-                  
+
                   <td className="customer-cell">
                     <div className="customer-name">{delivery.customerName}</div>
                     <div className="customer-phone">{delivery.customerPhone}</div>
                   </td>
-                  
+
                   <td className="date-cell">
                     {formatShortDate(delivery.timestamps.orderDate)}
                   </td>
-                  
+
                   <td className="amount-cell">
                     <div className="amount-wrapper">
                       <span className="amount-value">₹{Math.round(delivery.totalAmount)}</span>
                       <span className="items-count">{delivery.itemCount} items</span>
                     </div>
                   </td>
-                  
+
                   <td className="pickup-cell">
                     <div className="shop-name-wrapper">
                       {delivery.shopName ? (
@@ -1424,7 +1426,7 @@ const DeliveryManagement = () => {
                       )}
                     </div>
                   </td>
-                  
+
                   <td className="dropoff-cell">
                     {/* Modified to avoid showing tooltip on hover */}
                     <div className="location-wrapper">
@@ -1438,16 +1440,16 @@ const DeliveryManagement = () => {
                       </div>
                     </div>
                   </td>
-                  
-                  
-                  
+
+
+
                   <td className="status-cell">
                     <div className={`status-badge ${delivery.status}`}>
                       {getStatusIcon(delivery.status)}
                       <span>{getStatusText(delivery.status)}</span>
                     </div>
                   </td>
-                  
+
                 </tr>
               ))}
             </tbody>

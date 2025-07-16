@@ -697,7 +697,8 @@ const DashboardLayout = ({ children, onLogout }) => {
 const DashboardHome = () => {
   // Function to calculate amount without tax
   const calculateAmountWithoutTax = (order) => {
-    return (order.subtotal || 0) + (order.deliveryCharge || 0);
+    // return (order.subtotal || 0) + (order.deliveryCharge || 0);
+    return (order.totalAmount) ;
   };
 
   const [stats, setStats] = useState([
