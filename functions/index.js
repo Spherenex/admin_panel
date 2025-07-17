@@ -510,6 +510,7 @@ app.use(cors({
     'http://localhost:5174', 
     'http://127.0.0.1:5174', 
     'http://localhost:3000',
+    'https://admin-panel-zappcart.vercel.app',
     'https://admin-panel-mu-sepia.vercel.app', // Added Vercel deployment URL
     process.env.FRONTEND_URL, // For any additional deployment URLs
   ].filter(Boolean), // Removes any undefined/null entries
