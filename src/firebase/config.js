@@ -1,30 +1,23 @@
 
-
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
+import { getAuth } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 
-
-// Your Firebase configuration
 const firebaseConfig = {
-apiKey: "AIzaSyA9nu_vtGgDos64AarR88Z7CfTWksHN_3I",
-  authDomain: "cyber-security-89312.firebaseapp.com",
-  databaseURL: "https://cyber-security-89312-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "cyber-security-89312",
-  storageBucket: "cyber-security-89312.firebasestorage.app",
-  messagingSenderId: "556823345671",
-  appId: "1:556823345671:web:de3bd455f1bcf56e3748a2",
-  measurementId: "G-SD5H9V3163"
-
+  apiKey: "AIzaSyA5ReIwel6soo1uIWWRvAIdIubZQKnbjfc",
+  authDomain: "zappcart-control-panel.firebaseapp.com",
+  databaseURL: "https://zappcart-control-panel-default-rtdb.firebaseio.com",
+  projectId: "zappcart-control-panel",
+  storageBucket: "zappcart-control-panel.firebasestorage.app",
+  messagingSenderId: "553907813502",
+  appId: "1:553907813502:web:a02da34d9d47af8c0cac2f",
+  measurementId: "G-G1HDHNE57E"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const storage = getStorage(app);
+const auth = getAuth(app);
 
-// Initialize Firebase Authentication and get a reference to the service
-export const auth = getAuth(app);
-
-// Initialize Realtime Database and get a reference to the service
-export const database = getDatabase(app);
-
-export default app;
+export { db, storage, auth, app };
