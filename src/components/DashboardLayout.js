@@ -1,3 +1,6 @@
+
+
+
 // import React, { useState, useEffect } from 'react';
 // import { 
 //   Package, 
@@ -17,11 +20,13 @@
 // import { ref, onValue } from 'firebase/database';
 // import { db } from '../firebase/config';
 // import '../styles/DashboardLayout.css';
-// import { Link } from 'react-router-dom';
+// import { Link, useLocation } from 'react-router-dom';
+// import NotificationIcon from './NotificationIcon';
 
 // const DashboardLayout = ({ children, onLogout }) => {
 //   const [sidebarOpen, setSidebarOpen] = useState(true);
 //   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+//   const location = useLocation();
   
 //   const navItems = [
 //     { title: 'Order Management', icon: <Package className="w-5 h-5" />, path: '/orders' },
@@ -30,6 +35,7 @@
 //     { title: 'Payment & Commission', icon: <CreditCard className="w-5 h-5" />, path: '/payments' },
 //     { title: 'Customer Support', icon: <MessageSquare className="w-5 h-5" />, path: '/support' },
 //     { title: 'Reports & Analytics', icon: <BarChart className="w-5 h-5" />, path: '/analytics' },
+//     { title: 'Notifications', icon: <Bell className="w-5 h-5" />, path: '/notifications' },
 //   ];
   
 //   const toggleSidebar = () => {
@@ -41,7 +47,7 @@
 //   };
   
 //   // Get current path for highlighting active nav item
-//   const currentPath = window.location.pathname;
+//   const currentPath = location.pathname;
   
 //   return (
 //     <div className="dashboard-container">
@@ -70,14 +76,14 @@
 //         <div className="sidebar-content">
 //           <nav className="sidebar-nav">
 //             {navItems.map((item, index) => (
-//               <a 
+//               <Link 
 //                 key={index} 
-//                 href={item.path}
+//                 to={item.path}
 //                 className={`nav-item ${currentPath === item.path ? 'active' : ''}`}
 //               >
 //                 <span className="nav-icon">{item.icon}</span>
 //                 <span className={`nav-text ${!sidebarOpen && 'hidden'}`}>{item.title}</span>
-//               </a>
+//               </Link>
 //             ))}
 //           </nav>
 //         </div>
@@ -113,16 +119,18 @@
 //             </button>
             
 //             <h1 className="page-title">
-//               <a href="/dashboard" className="dashboard-link">Dashboard</a>
+//               <Link to="/dashboard" className="dashboard-link">Dashboard</Link>
 //             </h1>
             
 //             <div className="breadcrumb">
 //               <div className="breadcrumb-item">
-//                 <a href="/dashboard" className="breadcrumb-link">Home</a>
+//                 <Link to="/dashboard" className="breadcrumb-link">Home</Link>
 //               </div>
 //               <span className="breadcrumb-separator">/</span>
 //               <div className="breadcrumb-item">
-//                 <a href="/dashboard" className="breadcrumb-link">Dashboard</a>
+//                 <span className="breadcrumb-current">
+//                   {navItems.find(item => item.path === currentPath)?.title || 'Dashboard'}
+//                 </span>
 //               </div>
 //             </div>
 //           </div>
@@ -139,14 +147,10 @@
 //               />
 //             </div>
             
-//             <button className="header-icon-button">
-//               <Bell className="w-5 w-5" />
-//               <span className="notification-badge"></span>
-//             </button>
+//             {/* Replace the Bell icon with NotificationIcon component */}
+//             <NotificationIcon />
             
-//             <button className="header-icon-button ml-2">
-//               <User className="w-5 h-5" />
-//             </button>
+           
 //           </div>
 //         </header>
         
@@ -160,6 +164,12 @@
 // };
 
 // const DashboardHome = () => {
+//   // Function to calculate amount without tax
+//   const calculateAmountWithoutTax = (order) => {
+//     // return (order.subtotal || 0) + (order.deliveryCharge || 0);
+//     return (order.totalAmount) ;
+//   };
+
 //   const [stats, setStats] = useState([
 //     { title: 'Total Orders', value: '0', change: '0%', changeType: 'neutral' },
 //     { title: 'Active Vendors', value: '0', change: '0%', changeType: 'neutral' },
@@ -244,9 +254,11 @@
 //         const totalOrders = orders.length;
 //         const activeVendors = shops.filter(s => s.status === 'active').length;
 //         const pendingDeliveries = orders.filter(o => o.status === 'out_for_delivery' || o.status === 'preparing').length;
+        
+//         // Calculate revenue without tax
 //         const revenue = orders
 //           .filter(o => o.status === 'delivered')
-//           .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+//           .reduce((sum, o) => sum + calculateAmountWithoutTax(o), 0);
 
 //         // Calculate changes (mock previous month data for simplicity)
 //         const currentMonth = new Date().getMonth();
@@ -263,12 +275,13 @@
 //           return orderDate.getMonth() === lastMonth && orderDate.getFullYear() === lastMonthYear;
 //         });
 
+//         // Calculate current and last month revenue without tax
 //         const currentMonthRevenue = currentMonthOrders
 //           .filter(o => o.status === 'delivered')
-//           .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+//           .reduce((sum, o) => sum + calculateAmountWithoutTax(o), 0);
 //         const lastMonthRevenue = lastMonthOrders
 //           .filter(o => o.status === 'delivered')
-//           .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+//           .reduce((sum, o) => sum + calculateAmountWithoutTax(o), 0);
 
 //         const revenueChange = lastMonthRevenue > 0
 //           ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(1)
@@ -337,7 +350,7 @@
 //               id: order.id,
 //               displayId: orderIdMap[order.id] || `ORD-${orders.indexOf(order) + 1}`,
 //               date: order.orderDate,
-//               amount: order.totalAmount || 0,
+//               amount: calculateAmountWithoutTax(order), // Changed to amount without tax
 //               status: order.status,
 //               shopName: shopInfo?.name || order.vendor?.name || 'Unknown'
 //             };
@@ -352,7 +365,9 @@
 //           .map(shop => {
 //             const shopOrders = currentMonthOrders
 //               .filter(o => o.vendor?.id === shop.id && o.status === 'delivered');
-//             const revenue = shopOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+            
+//             // Calculate revenue without tax
+//             const revenue = shopOrders.reduce((sum, o) => sum + calculateAmountWithoutTax(o), 0);
 //             const orderCount = shopOrders.length;
 //             return {
 //               id: shop.id,
@@ -453,7 +468,7 @@
 //             <div className="widget-header">
 //               <h3 className="widget-title">Recent Orders</h3>
 //               <div className="widget-actions">
-//                 <a href="/orders" className="widget-action-button">View All</a>
+//                 <Link to="/orders" className="widget-action-button">View All</Link>
 //               </div>
 //             </div>
 //             <div className="widget-content">
@@ -491,7 +506,7 @@
 //             <div className="widget-header">
 //               <h3 className="widget-title">Top Vendors</h3>
 //               <div className="widget-actions">
-//                 <a href="/partners" className="widget-action-button">View All</a>
+//                 <Link to="/partners" className="widget-action-button">View All</Link>
 //               </div>
 //             </div>
 //             <div className="widget-content">
@@ -529,6 +544,9 @@
 
 // export default DashboardLayout;
 // export { DashboardHome };
+
+
+
 
 
 
@@ -711,7 +729,6 @@ const DashboardHome = () => {
   const [topVendors, setTopVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [orderIdMap, setOrderIdMap] = useState({});
 
   // Fetch orders and shops from Firebase
   useEffect(() => {
@@ -720,15 +737,6 @@ const DashboardHome = () => {
 
     let ordersData = [];
     let shopsData = [];
-
-    // Generate order ID mapping
-    const generateOrderIdMap = (orders) => {
-      const idMap = {};
-      orders.forEach((order, index) => {
-        idMap[order.id] = `ORD-${index + 1}`;
-      });
-      return idMap;
-    };
 
     // Fetch orders
     const ordersUnsubscribe = onValue(ordersRef, (snapshot) => {
@@ -741,10 +749,6 @@ const DashboardHome = () => {
             { status: 'order_placed', time: data[key].orderDate, note: 'Order placed successfully' }
           ]
         })) : [];
-        
-        // Generate and set order ID mapping
-        const idMap = generateOrderIdMap(ordersData);
-        setOrderIdMap(idMap);
         
         processData(ordersData, shopsData);
       } catch (err) {
@@ -879,9 +883,9 @@ const DashboardHome = () => {
             const shopInfo = shops.find(s => s.id === order.vendor?.id);
             return {
               id: order.id,
-              displayId: orderIdMap[order.id] || `ORD-${orders.indexOf(order) + 1}`,
+              displayId: order.id, // Use the actual Firebase ID instead of the generated one
               date: order.orderDate,
-              amount: calculateAmountWithoutTax(order), // Changed to amount without tax
+              amount: calculateAmountWithoutTax(order),
               status: order.status,
               shopName: shopInfo?.name || order.vendor?.name || 'Unknown'
             };
