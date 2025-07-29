@@ -10012,35 +10012,35 @@ const OrderManagement = () => {
   const [processingPaymentCompletedOrders, setProcessingPaymentCompletedOrders] = useState([]);
 
   // Function to check if the order is eligible for vendor assignment
- // Function to check if the order is eligible for vendor assignment
-const isOrderEligibleForVendorAssignment = (order) => {
-  // Check if order already has a vendor
-  if (order.vendor) return false;
-  
-  // Check if order is in a cancelled state (using either status or newStatus)
-  if (order.status === 'cancelled' || order.newStatus === 'cancelled') return false;
-  
-  // Check if order is delivered
-  if (order.status === 'delivered') return false;
-  
-  // Check if order has payment-failed status - ADDING THIS CHECK
-  if (order.status === 'payment-failed') return false;
-  
-  // Check payment-related cancellation states
-  if (order.paymentStatus === 'failed' ||
+  // Function to check if the order is eligible for vendor assignment
+  const isOrderEligibleForVendorAssignment = (order) => {
+    // Check if order already has a vendor
+    if (order.vendor) return false;
+
+    // Check if order is in a cancelled state (using either status or newStatus)
+    if (order.status === 'cancelled' || order.newStatus === 'cancelled') return false;
+
+    // Check if order is delivered
+    if (order.status === 'delivered') return false;
+
+    // Check if order has payment-failed status - ADDING THIS CHECK
+    if (order.status === 'payment-failed') return false;
+
+    // Check payment-related cancellation states
+    if (order.paymentStatus === 'failed' ||
       order.paymentStatus === 'cancelled' ||
       order.paymentStatus === 'refunded' ||
       order.refundStatus === 'initiated' ||
       order.refundStatus === 'processed') return false;
-      
-  // Check cancellationReason for payment issues
-  if (order.cancellationReason &&
-     (order.cancellationReason.toLowerCase().includes('payment') || 
-      order.cancellationReason.toLowerCase().includes('pay'))) return false;
-  
-  // If none of the above conditions apply, the order is eligible
-  return true;
-};
+
+    // Check cancellationReason for payment issues
+    if (order.cancellationReason &&
+      (order.cancellationReason.toLowerCase().includes('payment') ||
+        order.cancellationReason.toLowerCase().includes('pay'))) return false;
+
+    // If none of the above conditions apply, the order is eligible
+    return true;
+  };
 
   // Function to fetch complete vendor data including selectedCategories
   const fetchCompleteVendorData = async (vendorId) => {
@@ -12731,66 +12731,66 @@ const isOrderEligibleForVendorAssignment = (order) => {
   };
 
   // Export orders to CSV
-  const exportOrdersCSV = () => {
-    const filteredOrders = getFilteredOrders();
+const exportOrdersCSV = () => {
+  const filteredOrders = getFilteredOrders();
 
-    // Define CSV headers
-    const headers = [
-      'Order ID',
-      'Customer Name',
-      'Customer Email',
-      'Customer Phone',
-      'Address',
-      'Date & Time',
-      'Amount',
-      'Status',
-      'Vendor',
-      'Delivery Person',
-      'Items'
+  // Define CSV headers
+  const headers = [
+    'Order ID',
+    'Customer Name',
+    'Customer Email',
+    'Customer Phone',
+    'Address',
+    'Date & Time',
+    'Amount',
+    'Status',
+    'Vendor',
+    'Delivery Person',
+    'Items'
+  ];
+
+  // Map orders to CSV rows
+  const rows = filteredOrders.map(order => {
+    const itemsString = order.items ? order.items
+      .map(item => `${item.name} x ${item.quantity}`)
+      .join('; ') : '';
+
+    return [
+      order.id, // Always use the actual Firebase-generated ID directly
+      order.customer?.fullName || '',
+      order.customer?.email || '',
+      order.customer?.phone || '',
+      `${order.customer?.address || ''}, ${order.customer?.city || ''}, ${order.customer?.pincode || ''}`,
+      formatDate(order.orderDate),
+      calculateAmountWithoutTax(order),
+      getStatusText(order.status),
+      order.vendor?.name || (order.assignedVendor?.name ? `${order.assignedVendor.name} (pending)` : ''),
+      order.delivery?.partnerName || (order.deliveryPerson?.name || ''),
+      itemsString
     ];
+  });
 
-    // Map orders to CSV rows
-    const rows = filteredOrders.map(order => {
-      const itemsString = order.items ? order.items
-        .map(item => `${item.name} x ${item.quantity}`)
-        .join('; ') : '';
+  // Combine headers and rows
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell =>
+      // Escape special characters in CSV
+      typeof cell === 'string' ? `"${cell.replace(/"/g, '""')}"` : cell
+    ).join(','))
+  ].join('\n');
 
-      return [
-        orderIdMap[order.id] || order.id,
-        order.customer?.fullName || '',
-        order.customer?.email || '',
-        order.customer?.phone || '',
-        `${order.customer?.address || ''}, ${order.customer?.city || ''}, ${order.customer?.pincode || ''}`,
-        formatDate(order.orderDate),
-        calculateAmountWithoutTax(order),
-        getStatusText(order.status),
-        order.vendor?.name || (order.assignedVendor?.name ? `${order.assignedVendor.name} (pending)` : ''),
-        order.delivery?.partnerName || (order.deliveryPerson?.name || ''),
-        itemsString
-      ];
-    });
+  // Create a Blob with the CSV content
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
 
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell =>
-        // Escape special characters in CSV
-        typeof cell === 'string' ? `"${cell.replace(/"/g, '""')}"` : cell
-      ).join(','))
-    ].join('\n');
-
-    // Create a Blob with the CSV content
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    // Create a link element and trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `orders_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // Create a link element and trigger download
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `orders_export_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
   const filteredOrders = getFilteredOrders();
 
@@ -13091,7 +13091,8 @@ const isOrderEligibleForVendorAssignment = (order) => {
                   <td className="order-id-cell">
                     <div className="order-id-with-status">
                       <Package className="order-icon" />
-                      <span className="order-id-text">{orderIdMap[order.id] || order.id}</span>
+                      {/* Display the actual Firebase ID instead of using orderIdMap */}
+                      <span className="order-id-text">{order.id}</span>
                       <div className={`order-status-indicator ${order.status}`}>
                         {getStatusIcon(order.status)}
                         <span className="status-text">{getStatusText(order.status)}</span>

@@ -6150,62 +6150,70 @@ const ShopPartnerDashboard = () => {
   };
 
   // Export orders to CSV
-  const exportOrdersCSV = () => {
-    const ordersToExport = filteredShopOrders;
+const exportOrdersCSV = () => {
+  const ordersToExport = filteredShopOrders;
 
-    // Define CSV headers
-    const headers = [
-      'Order ID',
-      'Customer Name',
-      'Customer Email',
-      'Customer Phone',
-      'Address',
-      'Date & Time',
-      'Amount',
-      'Status',
-      'Items'
+  // Define CSV headers
+  const headers = [
+    'Order ID',
+    'Customer Name',
+    'Customer Email',
+    'Customer Phone',
+    'Address',
+    'Date & Time',
+    'Amount',
+    'Status',
+    'Items'
+  ];
+
+  // Map orders to CSV rows
+  const rows = ordersToExport.map(order => {
+    const itemsString = order.items ? order.items
+      .map(item => `${item.name} x ${item.quantity}`)
+      .join('; ') : '';
+
+    // Format the order ID correctly for Excel
+    // Add a single quote prefix to force Excel to treat the ID as text
+    const excelSafeOrderId = `'${order.id}`; // The single quote tells Excel this is text, not a formula
+
+    return [
+      excelSafeOrderId, // Excel-safe order ID format
+      order.customer?.fullName || '',
+      order.customer?.email || '',
+      order.customer?.phone || '',
+      `${order.customer?.address || ''}, ${order.customer?.city || ''}, ${order.customer?.pincode || ''}`,
+      formatDate(order.orderDate),
+      calculateAmountWithoutTax(order),
+      getStatusText(order.status),
+      itemsString
     ];
+  });
 
-    // Map orders to CSV rows
-    const rows = ordersToExport.map(order => {
-      const itemsString = order.items ? order.items
-        .map(item => `${item.name} x ${item.quantity}`)
-        .join('; ') : '';
+  // Combine headers and rows
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell =>
+      // Escape special characters in CSV
+      typeof cell === 'string' ? `"${cell.replace(/"/g, '""')}"` : cell
+    ).join(','))
+  ];
 
-      return [
-        orderIdMap[order.id] || order.id,
-        order.customer?.fullName || '',
-        order.customer?.email || '',
-        order.customer?.phone || '',
-        `${order.customer?.address || ''}, ${order.customer?.city || ''}, ${order.customer?.pincode || ''}`,
-        formatDate(order.orderDate),
-        calculateAmountWithoutTax(order),
-        getStatusText(order.status),
-        itemsString
-      ];
-    });
+  // Add BOM for better UTF-8 compatibility
+  const BOM = '\uFEFF';
+  const csvContentWithBOM = BOM + csvContent.join('\n');
 
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell =>
-        // Escape special characters in CSV
-        typeof cell === 'string' ? `"${cell.replace(/"/g, '""')}"` : cell
-      ).join(','))
-    ].join('\n');
+  // Create a Blob with the CSV content
+  const blob = new Blob([csvContentWithBOM], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
 
-    // Create a Blob with the CSV content
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    // Create a link element and trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${shops.find(s => s.id === selectedShop)?.name}_orders_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // Create a link element and trigger download
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `${shops.find(s => s.id === selectedShop)?.name}_orders_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
   // Get order count by area
   const getOrdersByArea = () => {
@@ -6822,72 +6830,86 @@ const ShopPartnerDashboard = () => {
               </div>
             </div>
 
-            {filteredShopOrders.length > 0 ? (
-              <div className="orders-table-container">
-                <table className="orders-table">
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Customer</th>
-                      <th>Date & Time</th>
-                      <th>Amount</th>
-                      <th>Address</th>
-                      <th>Status</th>
-                      <th>Items</th>
-
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredShopOrders.map((order) => (
-                      <tr key={order.id} className={`order-row ${order.status}`}>
-                        <td className="order-id-cell">
-                          <div className="order-id-with-status">
-                            <Package className="order-icon" />
-                            <span className="order-id-text">{orderIdMap[order.id] || order.id}</span>
-                          </div>
-                        </td>
-                        <td className="customer-cell">
-                          <div className="customer-name">{order.customer?.fullName}</div>
-                          <div className="customer-phone">{order.customer?.phone}</div>
-                        </td>
-                        <td className="date-cell">
-                          {formatDate(order.orderDate)}
-                        </td>
-                        <td className="amount-cell">
-                          <div className="order-amount">{formatCurrency(calculateAmountWithoutTax(order))}</div>
-                          <div className="items-count">{order.items?.length} items</div>
-                        </td>
-                        <td className="address-cell">
-                          <div className="location">
-                            <MapPin className="location-icon" />
-                            <span className="address-text">{`${order.customer?.address}, ${order.customer?.city}`}</span>
-                          </div>
-                        </td>
-                        <td className="status-cell">
-                          <div className={`order-status-indicator ${order.status}`}>
-                            {getStatusIcon(order.status)}
-                            <span className="status-text">{getStatusText(order.status)}</span>
-                          </div>
-                        </td>
-                        <td className="items-list-cell">
-                          <div className="items-list">
-                            {order.items?.slice(0, 2).map((item, idx) => (
-                              <div key={idx} className="item-brief">
-                                {item.name} x {item.quantity}
-                              </div>
-                            ))}
-                            {order.items?.length > 2 && (
-                              <div className="more-items">+{order.items.length - 2} more</div>
-                            )}
-                          </div>
-                        </td>
-
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+           {filteredShopOrders.length > 0 ? (
+  <div className="orders-table-container">
+    <table className="orders-table">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Date & Time</th>
+          <th>Amount</th>
+          <th>Address</th>
+          <th>Status</th>
+          <th>Items</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filteredShopOrders.map((order) => (
+          <tr key={order.id} className={`order-row ${order.status}`}>
+            <td className="order-id-cell">
+              <div className="order-id-with-status">
+                <Package className="order-icon" />
+                <span className="order-id-text" title={order.id}>
+                  #{order.id}
+                  <button
+                    className="copy-id-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(order.id);
+                      // Optional: You can add a toast notification here
+                    }}
+                    title="Copy order ID"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </span>
               </div>
-            ) : (
+            </td>
+            <td className="customer-cell">
+              <div className="customer-name">{order.customer?.fullName}</div>
+              <div className="customer-phone">{order.customer?.phone}</div>
+            </td>
+            <td className="date-cell">
+              {formatDate(order.orderDate)}
+            </td>
+            <td className="amount-cell">
+              <div className="order-amount">{formatCurrency(calculateAmountWithoutTax(order))}</div>
+              <div className="items-count">{order.items?.length} items</div>
+            </td>
+            <td className="address-cell">
+              <div className="location">
+                <MapPin className="location-icon" />
+                <span className="address-text">{`${order.customer?.address}, ${order.customer?.city}`}</span>
+              </div>
+            </td>
+            <td className="status-cell">
+              <div className={`order-status-indicator ${order.status}`}>
+                {getStatusIcon(order.status)}
+                <span className="status-text">{getStatusText(order.status)}</span>
+              </div>
+            </td>
+            <td className="items-list-cell">
+              <div className="items-list">
+                {order.items?.slice(0, 2).map((item, idx) => (
+                  <div key={idx} className="item-brief">
+                    {item.name} x {item.quantity}
+                  </div>
+                ))}
+                {order.items?.length > 2 && (
+                  <div className="more-items">+{order.items.length - 2} more</div>
+                )}
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+) : (
               <div className="no-orders-found">
                 <p>{isLoading ? 'Loading...' : 'No orders found matching your criteria.'}</p>
               </div>
