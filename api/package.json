@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "Serverless API functions for admin panel",
   "main": "index.js",
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
-    "razorpay": "^2.9.6",
-    "crypto": "^1.0.1"
+    "razorpay": "^2.9.6"
   }
 }
