@@ -274,10 +274,10 @@ const CONFIG = {
     razorpayKeyId: 'rzp_test_psQiRu5RCF99Dp'
   },
   // For the admin panel hosted on Vercel
-  vercel: {
-    apiUrl: 'https://https://admin-panel-mu-sepia.vercel.app/',
-    razorpayKeyId: 'rzp_test_psQiRu5RCF99Dp'
-  }
+ vercel: {
+  apiUrl: 'https://admin-panel-mu-sepia.vercel.app/api',
+  razorpayKeyId: 'rzp_test_psQiRu5RCF99Dp'
+},
 };
 
 // Cache for discovered API URL
