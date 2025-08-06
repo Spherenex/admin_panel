@@ -581,7 +581,7 @@ const DashboardLayout = ({ children, onLogout }) => {
     { title: 'Order Management', icon: <Package className="w-5 h-5" />, path: '/orders' },
     { title: 'Shop Partner Dashboard', icon: <Store className="w-5 h-5" />, path: '/partners' },
     { title: 'Delivery Management', icon: <Truck className="w-5 h-5" />, path: '/delivery' },
-    { title: 'Payment & Commission', icon: <CreditCard className="w-5 h-5" />, path: '/payments' },
+    { title: 'Payments', icon: <CreditCard className="w-5 h-5" />, path: '/payments' },
     { title: 'Customer Support', icon: <MessageSquare className="w-5 h-5" />, path: '/support' },
     { title: 'Reports & Analytics', icon: <BarChart className="w-5 h-5" />, path: '/analytics' },
     { title: 'Notifications', icon: <Bell className="w-5 h-5" />, path: '/notifications' },

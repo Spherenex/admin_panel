@@ -875,7 +875,7 @@ const DeliveryManagement = () => {
             } : null;
 
             return {
-              id: `DEL-${order.id.substring(0, 8)}`,
+              id: `DEL-${order.id}`,
               orderId: order.id,
               displayOrderId: orderIdMap[order.id] || `ORD-${ordersData.findIndex(o => o.id === order.id) + 1}`, // Fallback in case map isn't ready
               customerName: order.customer.fullName,

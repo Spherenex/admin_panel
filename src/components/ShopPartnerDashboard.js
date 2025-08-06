@@ -3429,6 +3429,7 @@ import {
   Edit,
   Trash,
   Eye,
+  EyeOff,
   Mail,
   Filter,
   Search,
@@ -3468,6 +3469,9 @@ const AddShopModal = ({
   shopCategories,
   handleManualRatingChange
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   if (!isOpen) return null;
 
   return (
@@ -3680,30 +3684,48 @@ const AddShopModal = ({
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="password">Password*</label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={newShopForm.password}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Create a strong password"
-                    minLength="6"
-                  />
+                  <div className="password-input-container">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      name="password"
+                      value={newShopForm.password}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Create a strong password"
+                      minLength="6"
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group">
                   <label htmlFor="confirmPassword">Confirm Password*</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={newShopForm.confirmPassword}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Confirm password"
-                    minLength="6"
-                  />
+                  <div className="password-input-container">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={newShopForm.confirmPassword}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Confirm password"
+                      minLength="6"
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="password-requirements">
@@ -5511,18 +5533,113 @@ const ShopPartnerDashboard = () => {
       });
 
       // Reset form and close modal
-      // ... Reset form code remains the same ...
+      setNewShopForm({
+        name: '',
+        address: '',
+        city: '',
+        category: 'Grocery',
+        owner: '',
+        phone: '',
+        email: '',
+        gstNumber: '',
+        rating: 0,
+        reviews: 0,
+        meatSectorType: 'None',
+        loginEmail: '',
+        password: '',
+        confirmPassword: '',
+        preferredPaymentMode: 'BANK',
+        accountHolderName: '',
+        accountNumber: '',
+        confirmAccountNumber: '',
+        ifscCode: '',
+        bankName: '',
+        bankBranch: '',
+        upiId: '',
+        upiProvider: 'gpay',
+        otherUpiProvider: '',
+        upiMobileNumber: '',
+        paymentContactName: '',
+        paymentContactPhone: '',
+        paymentContactEmail: ''
+      });
+
+      setIsAddShopModalOpen(false);
+      setIsLoading(false);
 
       setNotification({
         message: `Shop ${newShop.name} has been added successfully with vendor login`,
         type: 'success',
       });
 
-      // ... Rest of the function remains the same ...
+      // Auto dismiss notification after 3 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+
+      // WhatsApp functionality - Share vendor details
+      setTimeout(() => {
+        shareVendorDetailsOnWhatsApp(newShop, newShopForm.loginEmail, newShopForm.password);
+      }, 1000);
+
     } catch (error) {
-      // ... Error handling remains the same ...
+      console.error('Error adding shop:', error);
+      setIsLoading(false);
+
+      setNotification({
+        message: `Failed to add shop: ${error.message}`,
+        type: 'error',
+      });
+
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
     }
   };
+
+  // Function to share vendor details on WhatsApp
+  const shareVendorDetailsOnWhatsApp = (shop, loginEmail, password) => {
+    const adminNumber = '8722237574';
+    const vendorNumber = shop.phone;
+    
+    const message = `🏪 *New Vendor Added Successfully*
+
+*Shop Details:*
+📋 Shop Name: ${shop.name}
+👤 Owner: ${shop.owner}
+📞 Phone: ${vendorNumber}
+📧 Email: ${shop.email}
+📍 Address: ${shop.location.address}
+🥩 Meat Sector: ${shop.meatSectorType}
+
+*Login Credentials:*
+📧 Login Email: ${loginEmail}
+🔒 Password: ${password}
+
+*Payment Details:*
+💳 Payment Mode: ${shop.paymentDetails.preferredPaymentMode}
+${shop.paymentDetails.preferredPaymentMode === 'BANK' ? 
+  `🏦 Bank: ${shop.paymentDetails.bankDetails.bankName}
+💰 Account: ${shop.paymentDetails.bankDetails.accountNumber}
+🔢 IFSC: ${shop.paymentDetails.bankDetails.ifscCode}` :
+  `📱 UPI ID: ${shop.paymentDetails.upiDetails.upiId}
+📲 UPI Phone: ${shop.paymentDetails.upiDetails.upiMobileNumber}`
+}
+
+*Next Steps:*
+✅ Shop is now active and ready to receive orders
+📱 Vendor can login using the credentials above
+📊 Monitor performance in admin dashboard
+
+Welcome to our platform! 🎉`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${vendorNumber}?text=${encodedMessage}`;
+    
+    // Open WhatsApp in a new tab
+    window.open(whatsappUrl, '_blank');
+  };
+
   // Function to handle opening the edit shop modal
   const handleEditShop = (shop) => {
     let address = '';
@@ -6380,14 +6497,7 @@ const exportOrdersCSV = () => {
                       <span className="info-value">{shop.gstNumber}</span>
                     </div>
                   )}
-                  <div className="info-item">
-                    <span className="info-label">Commission</span>
-                    <span className="info-value">{shop.commissionRate || 10}%</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Verified</span>
-                    <span className="info-value">{shop.verified ? 'Yes' : 'No'}</span>
-                  </div>
+                  
                 </div>
 
                 <div className="shop-actions">
