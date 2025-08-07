@@ -551,7 +551,7 @@ app.use(cors({
       'http://localhost:3001',
       'http://localhost:3002', // Added for React frontend
       'http://localhost:5000',
-      'https://https://admin-panel-mu-sepia.vercel.app/',
+      'https://admin-panel-mu-sepia.vercel.app/',
       
     ];
     

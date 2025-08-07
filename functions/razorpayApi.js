@@ -260,7 +260,6 @@
 
 
 
-
 // razorpayApi.js - Enhanced API service for Razorpay integration
 
 // Configuration for different environments
@@ -273,9 +272,9 @@ const CONFIG = {
     apiUrl: 'http://localhost:5000/api',
     razorpayKeyId: 'rzp_test_psQiRu5RCF99Dp'
   },
-  // For the admin panel hosted on Vercel
+  // FIXED: Corrected Vercel URL
   vercel: {
-    apiUrl: 'https://https://admin-panel-mu-sepia.vercel.app',
+    apiUrl: 'https://admin-panel-mu-sepia.vercel.app/api',
     razorpayKeyId: 'rzp_test_psQiRu5RCF99Dp'
   }
 };
@@ -291,11 +290,12 @@ let razorpayScriptLoaded = false;
 const getEnvironment = () => {
   const hostname = window.location.hostname;
   
+  // FIXED: Removed protocol and trailing slash
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'development';
-  } else if (hostname === 'https://admin-panel-mu-sepia.vercel.app/') {
+  } else if (hostname === 'admin-panel-mu-sepia.vercel.app') {
     return 'vercel';
-  } else if (hostname === 'https://admin-panel-mu-sepia.vercel.app/' || 
+  } else if (hostname === 'zappcart-control-panel.web.app' || 
              hostname === 'zappcart-control-panel.firebaseapp.com') {
     return 'production';
   }
@@ -320,6 +320,7 @@ const getConfig = () => {
 const LOCAL_DEVELOPMENT_URLS = [
   // Try localhost first (most common)
   'http://localhost:3001/api',
+  'http://localhost:5000/api',
   
   // Include local network IPs for mobile testing
   'http://192.168.1.2:3000/api',
@@ -637,10 +638,79 @@ const RazorpayService = {
    */
   checkServerStatus: async () => {
     try {
-      const data = await callApi('/health', 'GET');
+      // IMPORTANT: For health check reliability, add retry logic
+      let retries = 3;
+      let lastError = null;
+      
+      while (retries > 0) {
+        try {
+          console.log(`🔍 Checking payment server status... (${retries} retries left)`);
+          console.log(`Environment: ${getEnvironment()}`);
+          
+          const apiBaseUrl = await discoverApiServer();
+          const healthEndpoint = `${apiBaseUrl}/health`;
+          
+          console.log(`🚀 Attempting connection to: ${healthEndpoint}`);
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          const response = await fetch(healthEndpoint, { 
+            signal: controller.signal,
+            headers: { 'Accept': 'application/json' }
+          });
+          
+          clearTimeout(timeoutId);
+          
+          console.log(`✅ Response status: ${response.status}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            return {
+              status: 'online',
+              data
+            };
+          } else {
+            console.log(`⚠️ Payment server returned an error response: ${response.status}`);
+            retries--;
+            lastError = new Error(`Server returned ${response.status}`);
+          }
+        } catch (error) {
+          console.log(`❌ Primary endpoint failed: ${error.message}`);
+          retries--;
+          lastError = error;
+          
+          // Try a fallback for connection timeouts
+          if (error.name === 'AbortError') {
+            console.log('🔄 Trying fallback health endpoint...');
+            try {
+              // Try root endpoint as fallback
+              const apiBaseUrl = CONFIG[getEnvironment()].apiUrl.replace(/\/api$/, '');
+              const response = await fetch(`${apiBaseUrl}/api/health`, { timeout: 5000 });
+              
+              if (response.ok) {
+                const data = await response.json();
+                return {
+                  status: 'online',
+                  data,
+                  note: 'Connected via fallback endpoint'
+                };
+              }
+            } catch (fallbackError) {
+              console.log(`❌ Fallback endpoint also failed: ${fallbackError.message}`);
+            }
+          }
+        }
+        
+        // Wait before retrying
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
       return {
-        status: 'online',
-        data
+        status: 'offline',
+        error: lastError?.message || 'Unknown error'
       };
     } catch (error) {
       console.error('Server health check failed:', error);
