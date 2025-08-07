@@ -43,10 +43,21 @@ module.exports = async (req, res) => {
     // Handle CORS
     if (handleCORS(req, res)) return;
 
-    const { url, method } = req;
+    // const { url, method } = req;
     
-    // Extract path from URL - handle both /api and direct paths
-    let path = url;
+    // // Extract path from URL - handle both /api and direct paths
+    // let path = url;
+    // if (path.startsWith('/api')) {
+    //   path = path.replace('/api', '');
+    // }
+    // if (!path.startsWith('/')) {
+    //   path = '/' + path;
+    // }
+
+      const { url, method, query } = req;
+
+    // Extract path from query parameter (fallback to URL for local development)
+    let path = query?.path || url;
     if (path.startsWith('/api')) {
       path = path.replace('/api', '');
     }
@@ -214,7 +225,8 @@ async function handleVerifyPayment(req, res) {
 // Get payment status
 async function handlePaymentStatus(req, res) {
   try {
-    const paymentId = req.url.split('/').pop();
+    const fullPath = req.query?.path || req.url;
+    const paymentId = fullPath.split('/').pop();
     
     if (!paymentId) {
       return res.status(400).json({ error: 'Payment ID is required' });
