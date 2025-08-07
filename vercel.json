@@ -11,11 +11,11 @@
   ],
   "routes": [
     {
-      "src": "/functions/health",
+      "src": "/health",
       "dest": "/functions/health.js"
     },
     {
-      "src": "/functions/(.*)",
+      "src": "/api/(.*)",
       "dest": "/functions/index.js"
     },
     { 
