@@ -1,8 +1,86 @@
-# Getting Started with Create React App
+# Admin Panel with Payment Integration
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is a React-based admin panel with integrated payment processing using Razorpay.
 
-## Available Scripts
+## 🚀 Quick Start
+
+### Development Mode
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start the development server with payment server:**
+   ```bash
+   npm run dev
+   ```
+   This starts both the React app (port 3000) and the payment server (port 3001).
+
+   **OR** start them separately:
+   ```bash
+   # Terminal 1: Start payment server
+   npm run server
+
+   # Terminal 2: Start React app
+   npm start
+   ```
+
+3. **Open your browser:**
+   - Admin Panel: [http://localhost:3000](http://localhost:3000)
+   - Payment Server Health: [http://localhost:3001/api/health](http://localhost:3001/api/health)
+
+### Production Deployment (Vercel)
+
+1. **Deploy to Vercel:**
+   ```bash
+   npm run deploy
+   ```
+
+2. **Set environment variables in Vercel dashboard:**
+   - `RAZORPAY_KEY_ID`: Your Razorpay Key ID
+   - `RAZORPAY_KEY_SECRET`: Your Razorpay Key Secret
+
+3. **Verify deployment:**
+   - Check `https://your-app.vercel.app/api/health` for payment server status
+
+## 🏗️ Architecture
+
+### Local Development
+- Frontend: React app running on port 3000
+- Backend: Express server running on port 3001
+- Payment processing: Direct connection to local Razorpay server
+
+### Production (Vercel)
+- Frontend: Static React build served by Vercel
+- Backend: Serverless functions in `/api` folder
+- Payment processing: Vercel serverless functions handle Razorpay
+
+## 📊 Features
+
+- **Payment Management**: Process vendor payments via Razorpay
+- **Commission Tracking**: Manage vendor commission rates
+- **Transaction History**: View and export transaction data
+- **Vendor Management**: Detailed vendor analytics and payment history
+- **Real-time Status**: Server connectivity monitoring
+
+## 🔧 Environment Configuration
+
+### Local Development (`.env.development`)
+```
+REACT_APP_API_BASE_URL=http://localhost:3001
+REACT_APP_ENVIRONMENT=development
+REACT_APP_RAZORPAY_KEY_ID=your_key_here
+```
+
+### Production (`.env.production`)
+```
+REACT_APP_API_BASE_URL=
+REACT_APP_ENVIRONMENT=production
+REACT_APP_RAZORPAY_KEY_ID=your_key_here
+```
+
+## 🛠️ Available Scripts
 
 In the project directory, you can run:
 
