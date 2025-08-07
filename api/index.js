@@ -17,8 +17,9 @@ const razorpay = new Razorpay({
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
-  'Access-Control-Allow-Credentials': 'true'
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept, X-Requested-With',
+  'Access-Control-Allow-Credentials': 'false', // Set to false for wildcard origin
+  'Access-Control-Max-Age': '86400' // Cache preflight for 24 hours
 };
 
 // Helper function to handle CORS
