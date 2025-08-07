@@ -348,6 +348,7 @@
 
 
 // api/index.js - Vercel serverless function for Razorpay integration
+// CommonJS version for maximum compatibility
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 
