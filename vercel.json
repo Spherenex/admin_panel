@@ -4,6 +4,10 @@
     { "src": "api/**/*.js", "use": "@vercel/node", "config": { "runtime": "nodejs22.x" } },
     { "src": "build/**/*", "use": "@vercel/static" }
   ],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.js?path=$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "routes": [
     { "src": "/api/health", "dest": "/api/health.js" },
     { "src": "/api/create-razorpay-order", "dest": "/api/create-razorpay-order.js" },
