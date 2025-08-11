@@ -91,6 +91,9 @@ module.exports = async (req, res) => {
       case path === '/vendor-transfer' && method === 'POST':
         return handleVendorTransfer(req, res);
       
+      case path === '/send-vendor-sms' && method === 'POST':
+        return handleSendVendorSMS(req, res);
+      
       default:
         return res.status(404).json({ 
           error: 'Endpoint not found',
@@ -103,7 +106,8 @@ module.exports = async (req, res) => {
             'GET /api/payment-status/:paymentId',
             'POST /api/create-refund',
             'GET /api/razorpay-orders',
-            'POST /api/vendor-transfer'
+            'POST /api/vendor-transfer',
+            'POST /api/send-vendor-sms'
           ]
         });
     }
@@ -341,6 +345,62 @@ async function handleVendorTransfer(req, res) {
     console.error('Error processing vendor transfer:', error);
     res.status(500).json({ 
       error: 'Failed to process vendor transfer', 
+      details: error.message 
+    });
+  }
+}
+
+// Send SMS notification to vendor
+async function handleSendVendorSMS(req, res) {
+  try {
+    const { vendorPhone, message, vendorName, paymentId, amount } = req.body;
+
+    if (!vendorPhone || !message) {
+      return res.status(400).json({ 
+        error: 'Vendor phone and message are required' 
+      });
+    }
+
+    console.log('SMS Notification Request:', {
+      vendorPhone,
+      vendorName,
+      paymentId,
+      amount,
+      messagePreview: message.substring(0, 50) + '...'
+    });
+
+    // Here you would integrate with your SMS service provider
+    // Examples: Twilio, TextLocal, MSG91, etc.
+    
+    // For demonstration, we'll simulate SMS sending
+    const smsResponse = {
+      id: `sms_${Date.now()}`,
+      vendor_phone: vendorPhone,
+      vendor_name: vendorName || 'Unknown',
+      payment_id: paymentId,
+      amount: amount,
+      status: 'sent',
+      message_id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+      sent_at: new Date().toISOString(),
+      // In real implementation, you would get these from your SMS provider
+      delivery_status: 'pending',
+      cost: 0.05 // Example cost in your currency
+    };
+
+    // Simulate SMS API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    console.log('SMS sent successfully:', smsResponse);
+    
+    res.json({
+      success: true,
+      message: 'SMS notification sent successfully',
+      sms_details: smsResponse
+    });
+  } catch (error) {
+    console.error('Error sending SMS notification:', error);
+    res.status(500).json({ 
+      error: 'Failed to send SMS notification', 
       details: error.message 
     });
   }
