@@ -1600,17 +1600,42 @@ Your payment has been processed successfully.
     }));
 
     try {
+      console.log('🚀 Starting payment process for item:', item.name);
+      console.log('💰 Payment amount:', item.totalVendorPrice);
+      console.log('🏪 Vendor:', selectedVendor.name);
+      
       // Load Razorpay script if not already loaded
       if (!window.Razorpay) {
+        console.log('Loading Razorpay script...');
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.async = true;
         document.body.appendChild(script);
         
         await new Promise((resolve, reject) => {
-          script.onload = resolve;
-          script.onerror = reject;
+          script.onload = () => {
+            console.log('Razorpay script loaded successfully');
+            resolve();
+          };
+          script.onerror = (error) => {
+            console.error('Failed to load Razorpay script:', error);
+            reject(new Error('Failed to load Razorpay checkout script'));
+          };
         });
+      }
+
+      // Quick test to verify API is accessible
+      console.log('🔍 Testing API endpoint:', API_ENDPOINTS.createOrder);
+      
+      try {
+        const testResponse = await fetch(API_ENDPOINTS.health, { method: 'GET' });
+        if (!testResponse.ok) {
+          console.warn('⚠️ Health check failed, but continuing with payment...');
+        } else {
+          console.log('✅ API health check passed');
+        }
+      } catch (healthError) {
+        console.warn('⚠️ Health check error (continuing anyway):', healthError.message);
       }
 
       // Create Razorpay order through backend
@@ -1639,7 +1664,7 @@ Your payment has been processed successfully.
       
       console.log('Creating payment order with data:', paymentData);
       
-      const orderResponse = await fetch(`${API_URL}/api/create-razorpay-order`, {
+      const orderResponse = await fetch(API_ENDPOINTS.createOrder, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1647,22 +1672,44 @@ Your payment has been processed successfully.
         body: JSON.stringify(paymentData)
       });
 
+      console.log('Order response status:', orderResponse.status);
+
       if (!orderResponse.ok) {
         const errorData = await orderResponse.json().catch(() => ({}));
         console.error('Server error details:', errorData);
-        throw new Error(errorData.error || errorData.details || 'Failed to create payment order');
+        throw new Error(errorData.error || errorData.message || `HTTP ${orderResponse.status}: Failed to create payment order`);
       }
 
       const orderData = await orderResponse.json();
+      
+      console.log('Raw order response:', orderData);
+
+      // Validate the order data response
+      if (!orderData || !orderData.order) {
+        console.error('Invalid order response:', orderData);
+        throw new Error('Invalid response from payment server');
+      }
+
+      const order = orderData.order;
+      
+      console.log('Extracted order data:', order);
+      
+      // Validate required fields
+      if (!order.id || !order.amount) {
+        console.error('Missing required order fields:', order);
+        throw new Error('Incomplete order data received');
+      }
+
+      console.log('Order created successfully:', order);
 
       // Open Razorpay checkout
       const options = {
-        key: 'rzp_test_psQiRu5RCF99Dp',
-        amount: orderData.amount.toString(),
-        currency: orderData.currency,
+        key: orderData.razorpay_key_id || 'rzp_test_psQiRu5RCF99Dp',
+        amount: (order.amount || (item.totalVendorPrice * 100)).toString(),
+        currency: order.currency || 'INR',
         name: 'Vendor Payment System',
         description: `Payment to ${selectedVendor.name} for ${item.name} (Qty: ${item.quantity})`,
-        order_id: orderData.id,
+        order_id: order.id,
         prefill: {
           name: 'Admin User',
           email: 'admin@company.com',
@@ -1675,7 +1722,7 @@ Your payment has been processed successfully.
         handler: async (response) => {
           try {
             // Verify payment
-            const verifyResponse = await fetch(`${API_URL}/api/verify-razorpay-payment`, {
+            const verifyResponse = await fetch(API_ENDPOINTS.verifyPayment, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
