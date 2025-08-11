@@ -1604,6 +1604,21 @@ Your payment has been processed successfully.
       console.log('💰 Payment amount:', item.totalVendorPrice);
       console.log('🏪 Vendor:', selectedVendor.name);
       
+      // Validate payment data before proceeding
+      if (!item || !item.name) {
+        throw new Error('Invalid item data: item or item.name is missing');
+      }
+      
+      if (!item.totalVendorPrice || isNaN(item.totalVendorPrice) || item.totalVendorPrice <= 0) {
+        throw new Error(`Invalid payment amount: ${item.totalVendorPrice}. Amount must be a positive number.`);
+      }
+      
+      if (!selectedVendor || !selectedVendor.name) {
+        throw new Error('Invalid vendor data: vendor information is missing');
+      }
+      
+      console.log('✅ Payment data validation passed');
+      
       // Load Razorpay script if not already loaded
       if (!window.Razorpay) {
         console.log('Loading Razorpay script...');
@@ -1626,6 +1641,11 @@ Your payment has been processed successfully.
 
       // Quick test to verify API is accessible
       console.log('🔍 Testing API endpoint:', API_ENDPOINTS.createOrder);
+      
+      // Validate API endpoint before using it
+      if (!API_ENDPOINTS.createOrder) {
+        throw new Error('API endpoint for createOrder is not configured');
+      }
       
       try {
         const testResponse = await fetch(API_ENDPOINTS.health, { method: 'GET' });
@@ -1661,6 +1681,11 @@ Your payment has been processed successfully.
           })
         }
       };
+      
+      // Validate payment data before sending to API
+      if (!paymentData.amount || isNaN(paymentData.amount) || paymentData.amount <= 0) {
+        throw new Error(`Invalid payment amount in API payload: ${paymentData.amount}`);
+      }
       
       console.log('Creating payment order with data:', paymentData);
       
@@ -1702,10 +1727,27 @@ Your payment has been processed successfully.
 
       console.log('Order created successfully:', order);
 
+      // Calculate amount with proper validation
+      let paymentAmount;
+      if (order.amount && !isNaN(order.amount)) {
+        paymentAmount = order.amount;
+        console.log('Using order amount:', paymentAmount);
+      } else if (item.totalVendorPrice && !isNaN(item.totalVendorPrice)) {
+        paymentAmount = item.totalVendorPrice * 100; // Convert to paise
+        console.log('Using item total vendor price:', item.totalVendorPrice, 'converted to paise:', paymentAmount);
+      } else {
+        throw new Error(`Invalid payment amount: order.amount=${order.amount}, item.totalVendorPrice=${item.totalVendorPrice}`);
+      }
+
+      // Final validation before toString
+      if (!paymentAmount || isNaN(paymentAmount) || paymentAmount <= 0) {
+        throw new Error(`Final validation failed - invalid payment amount: ${paymentAmount}`);
+      }
+
       // Open Razorpay checkout
       const options = {
         key: orderData.razorpay_key_id || 'rzp_test_psQiRu5RCF99Dp',
-        amount: (order.amount || (item.totalVendorPrice * 100)).toString(),
+        amount: String(paymentAmount), // Use String() instead of toString() for safety
         currency: order.currency || 'INR',
         name: 'Vendor Payment System',
         description: `Payment to ${selectedVendor.name} for ${item.name} (Qty: ${item.quantity})`,
