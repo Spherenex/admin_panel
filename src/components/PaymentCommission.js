@@ -9,7 +9,6 @@ import {
   XCircle,
   Store,
   ChevronLeft,
-  Percent,
   Eye,
   Map,
   Phone,
@@ -24,7 +23,7 @@ import {
   Loader
 } from 'lucide-react';
 
-import { ref, onValue, update, set, get } from 'firebase/database';
+import { ref, onValue, update, set, get, push } from 'firebase/database';
 import { db } from '../firebase/config';
 import '../styles/PaymentCommission.css';
 
@@ -63,7 +62,8 @@ const API_ENDPOINTS = {
   health: `${API_URL}/api/health`,
   createOrder: `${API_URL}/api/create-razorpay-order`,
   verifyPayment: `${API_URL}/api/verify-razorpay-payment`,
-  vendorTransfer: `${API_URL}/api/vendor-transfer`
+  vendorTransfer: `${API_URL}/api/vendor-transfer`,
+  sendVendorSMS: `${API_URL}/api/send-vendor-sms`
 };
 
 console.log('🌐 Environment Detection:', {
@@ -104,6 +104,7 @@ const PaymentCommission = () => {
   const [vendorDetailsLoading, setVendorDetailsLoading] = useState(false);
   const [processingPayments, setProcessingPayments] = useState({});
   const [paidItems, setPaidItems] = useState({});
+  const [vendorBankDetails, setVendorBankDetails] = useState(null);
 
   // New states for notifications
   const [notification, setNotification] = useState(null);
@@ -729,20 +730,26 @@ const generateOrderIdMap = (orders) => {
           itemsData = itemsSnapshot.val();
         }
 
-        // Fetch prices from shops/${vendorId}/[basePrices, vendorPrices, sellingPrices]
+        // Fetch prices and payment details from shops/${vendorId}/[basePrices, vendorPrices, sellingPrices, paymentDetails]
         const basePricesRef = ref(db, `shops/${selectedVendor.id}/basePrices`);
         const vendorPricesRef = ref(db, `shops/${selectedVendor.id}/vendorPrices`);
         const sellingPricesRef = ref(db, `shops/${selectedVendor.id}/sellingPrices`);
+        const paymentDetailsRef = ref(db, `shops/${selectedVendor.id}/paymentDetails`);
 
-        const [basePricesSnapshot, vendorPricesSnapshot, sellingPricesSnapshot] = await Promise.all([
+        const [basePricesSnapshot, vendorPricesSnapshot, sellingPricesSnapshot, paymentDetailsSnapshot] = await Promise.all([
           get(basePricesRef),
           get(vendorPricesRef),
-          get(sellingPricesRef)
+          get(sellingPricesRef),
+          get(paymentDetailsRef)
         ]);
 
         const basePrices = basePricesSnapshot.exists() ? basePricesSnapshot.val() : {};
         const vendorPrices = vendorPricesSnapshot.exists() ? vendorPricesSnapshot.val() : {};
         const sellingPrices = sellingPricesSnapshot.exists() ? sellingPricesSnapshot.val() : {};
+        const paymentDetails = paymentDetailsSnapshot.exists() ? paymentDetailsSnapshot.val() : null;
+
+        // Set bank details for payment processing (extract bankDetails from paymentDetails)
+        setVendorBankDetails(paymentDetails?.bankDetails || null);
 
         if (ordersSnapshot.exists()) {
           const ordersData = ordersSnapshot.val();
@@ -1040,6 +1047,535 @@ const generateOrderIdMap = (orders) => {
     setSelectedVendor(null);
     setVendorItems([]);
     setVendorOrders([]);
+    setVendorBankDetails(null);
+  };
+
+  // Helper function to store payment record in Firebase
+  const storePaymentRecord = async (paymentResponse, item, vendor) => {
+    try {
+      const paymentKey = `payment_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      const paymentRef = ref(db, `payments/${paymentKey}`);
+      
+      await set(paymentRef, {
+        paymentId: paymentKey,
+        vendorId: vendor.id,
+        vendorName: vendor.name,
+        vendorPhone: vendor.phone || '',
+        vendorEmail: vendor.email || '',
+        itemId: item.id,
+        uniqueOrderItemId: item.uniqueId,
+        itemName: item.name,
+        orderId: item.orderId,
+        actualOrderId: item.actualOrderId,
+        quantity: item.quantity,
+        amount: item.totalVendorPrice,
+        razorpayOrderId: paymentResponse.razorpay_order_id,
+        razorpayPaymentId: paymentResponse.razorpay_payment_id,
+        status: 'completed',
+        createdAt: new Date().toISOString(),
+        smsNotificationSent: false
+      });
+      
+      console.log('Payment record stored successfully');
+    } catch (error) {
+      console.error('Error storing payment record:', error);
+    }
+  };
+
+  // Helper function to send SMS notification to vendor
+  const sendVendorSMSNotification = async (vendor, item, paymentId) => {
+    try {
+      if (!vendor.phone) {
+        console.log('No phone number available for vendor');
+        return { success: false, reason: 'No phone number' };
+      }
+
+      const smsMessage = `🎉 PAYMENT RECEIVED!
+
+💰 Amount: ${formatCurrency(item.totalVendorPrice)}
+📦 Item: ${item.name} (Qty: ${item.quantity})
+🏪 Vendor: ${vendor.name}
+📋 Order: ${item.orderId}
+💳 Payment ID: ${paymentId}
+
+Thank you for your partnership! 
+Your payment has been processed successfully.
+
+- Admin Team`;
+
+      console.log('Sending SMS to vendor:', vendor.phone);
+      
+      // Call the SMS API endpoint
+      const smsResponse = await fetch(API_ENDPOINTS.sendVendorSMS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vendorPhone: vendor.phone,
+          vendorName: vendor.name,
+          message: smsMessage,
+          paymentId: paymentId,
+          amount: item.totalVendorPrice
+        })
+      });
+
+      const smsResult = await smsResponse.json();
+      
+      if (smsResult.success) {
+        // Store SMS record in Firebase
+        const smsRef = ref(db, 'sms_notifications');
+        await push(smsRef, {
+          vendorId: vendor.id,
+          vendorPhone: vendor.phone,
+          vendorName: vendor.name,
+          message: smsMessage,
+          paymentId: paymentId,
+          itemDetails: {
+            name: item.name,
+            quantity: item.quantity,
+            amount: item.totalVendorPrice,
+            orderId: item.orderId
+          },
+          sentAt: new Date().toISOString(),
+          status: 'sent',
+          apiResponse: smsResult.sms_details
+        });
+        
+        console.log('SMS sent successfully and logged to Firebase');
+        return { success: true, details: smsResult };
+      } else {
+        throw new Error(smsResult.error || 'SMS sending failed');
+      }
+
+    } catch (error) {
+      console.error('Error sending SMS notification:', error);
+      
+      // Still log the attempt even if it failed
+      try {
+        const smsRef = ref(db, 'sms_notifications');
+        await push(smsRef, {
+          vendorId: vendor.id,
+          vendorPhone: vendor.phone,
+          vendorName: vendor.name,
+          paymentId: paymentId,
+          sentAt: new Date().toISOString(),
+          status: 'failed',
+          error: error.message
+        });
+      } catch (logError) {
+        console.error('Failed to log SMS error:', logError);
+      }
+      
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Helper function to open payment receipt in new tab
+  const openPaymentReceiptTab = (paymentResponse, item, vendor) => {
+    const receiptData = {
+      paymentId: paymentResponse.razorpay_payment_id,
+      orderId: paymentResponse.razorpay_order_id,
+      vendor: {
+        name: vendor.name,
+        phone: vendor.phone,
+        email: vendor.email,
+        address: vendor.address
+      },
+      item: {
+        name: item.name,
+        quantity: item.quantity,
+        vendorPrice: item.vendorPrice,
+        totalAmount: item.totalVendorPrice,
+        orderId: item.orderId
+      },
+      bankDetails: vendorBankDetails,
+      paymentDate: new Date().toISOString(),
+      status: 'Completed'
+    };
+
+    // Add bank details section to receipt
+    const bankDetailsSection = receiptData.bankDetails ? `
+    <div class="section">
+      <div class="section-title">Bank Account Details</div>
+      <div class="detail-row">
+        <span class="detail-label">Account Holder:</span>
+        <span class="detail-value">${receiptData.bankDetails.accountHolderName || 'Not provided'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Account Number:</span>
+        <span class="detail-value">${receiptData.bankDetails.accountNumber || 'Not provided'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">IFSC Code:</span>
+        <span class="detail-value">${receiptData.bankDetails.ifscCode || 'Not provided'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Bank Name:</span>
+        <span class="detail-value">${receiptData.bankDetails.bankName || 'Not provided'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Branch:</span>
+        <span class="detail-value">${receiptData.bankDetails.branch || 'Not provided'}</span>
+      </div>
+    </div>
+    ` : '';
+
+    // Create receipt HTML content
+    const receiptHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Payment Receipt - ${paymentResponse.razorpay_payment_id}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .receipt { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        .title { color: #28a745; font-size: 24px; font-weight: bold; margin: 0; }
+        .subtitle { color: #666; margin: 5px 0; }
+        .section { margin: 20px 0; }
+        .section-title { font-weight: bold; color: #333; margin-bottom: 10px; font-size: 16px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+        .detail-label { color: #666; }
+        .detail-value { font-weight: bold; color: #333; }
+        .amount { color: #28a745; font-size: 18px; font-weight: bold; }
+        .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0; }
+        .print-btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 20px 0; }
+        @media print { .print-btn { display: none; } }
+      </style>
+    </head>
+    <body>
+      <div class="receipt">
+        <div class="header">
+          <h1 class="title">Payment Receipt</h1>
+          <p class="subtitle">Vendor Payment Confirmation</p>
+        </div>
+        
+        <div class="success">
+          ✅ Payment Completed Successfully
+        </div>
+
+        <div class="section">
+          <div class="section-title">Payment Details</div>
+          <div class="detail-row">
+            <span class="detail-label">Payment ID:</span>
+            <span class="detail-value">${receiptData.paymentId}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Order ID:</span>
+            <span class="detail-value">${receiptData.orderId}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Payment Date:</span>
+            <span class="detail-value">${new Date(receiptData.paymentDate).toLocaleString()}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Status:</span>
+            <span class="detail-value">${receiptData.status}</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Vendor Information</div>
+          <div class="detail-row">
+            <span class="detail-label">Vendor Name:</span>
+            <span class="detail-value">${receiptData.vendor.name}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Phone:</span>
+            <span class="detail-value">${receiptData.vendor.phone || 'Not provided'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">${receiptData.vendor.email || 'Not provided'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Address:</span>
+            <span class="detail-value">${receiptData.vendor.address || 'Not provided'}</span>
+          </div>
+        </div>
+
+        ${bankDetailsSection}
+
+        <div class="section">
+          <div class="section-title">Item Details</div>
+          <div class="detail-row">
+            <span class="detail-label">Item Name:</span>
+            <span class="detail-value">${receiptData.item.name}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Order Reference:</span>
+            <span class="detail-value">${receiptData.item.orderId}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Quantity:</span>
+            <span class="detail-value">${receiptData.item.quantity}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Unit Price:</span>
+            <span class="detail-value">${formatCurrency(receiptData.item.vendorPrice)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Total Amount:</span>
+            <span class="detail-value amount">${formatCurrency(receiptData.item.totalAmount)}</span>
+          </div>
+        </div>
+
+        <button class="print-btn" onclick="window.print()">🖨️ Print Receipt</button>
+      </div>
+    </body>
+    </html>
+    `;
+
+    // Open in new tab
+    const newTab = window.open('', '_blank');
+    newTab.document.write(receiptHTML);
+    newTab.document.close();
+  };
+
+  // Enhanced payment confirmation dialog
+  const showPaymentConfirmationDialog = (item, vendor, bankDetails) => {
+    return new Promise((resolve) => {
+      // Create a modal dialog element
+      const modal = document.createElement('div');
+      modal.className = 'payment-confirmation-modal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      `;
+
+      const dialogContent = document.createElement('div');
+      dialogContent.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 0;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease-out;
+      `;
+
+      // Format bank details display
+      const bankDetailsHTML = bankDetails ? `
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #28a745;">
+          <h4 style="margin: 0 0 15px 0; color: #28a745; display: flex; align-items: center;">
+            <svg width="20" height="20" style="margin-right: 8px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="2" y1="7" x2="22" y2="7"></line>
+            </svg>
+            Bank Account Details
+          </h4>
+          <div style="display: grid; gap: 8px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666; font-weight: 500;">Account Holder:</span>
+              <span style="font-weight: bold;">${bankDetails.accountHolderName || 'Not provided'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666; font-weight: 500;">Account Number:</span>
+              <span style="font-weight: bold; font-family: monospace;">${bankDetails.accountNumber || 'Not provided'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666; font-weight: 500;">IFSC Code:</span>
+              <span style="font-weight: bold; font-family: monospace;">${bankDetails.ifscCode || 'Not provided'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666; font-weight: 500;">Bank Name:</span>
+              <span style="font-weight: bold;">${bankDetails.bankName || 'Not provided'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666; font-weight: 500;">Branch:</span>
+              <span style="font-weight: bold;">${bankDetails.bankBranch || 'Not provided'}</span>
+            </div>
+          </div>
+        </div>
+      ` : `
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
+          <p style="margin: 0; color: #856404;">
+            ⚠️ <strong>Bank details not available</strong> - Payment will be processed through Razorpay to vendor's registered account.
+          </p>
+        </div>
+      `;
+
+      dialogContent.innerHTML = `
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px 12px 0 0;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 600; display: flex; align-items: center;">
+            <svg width="28" height="28" style="margin-right: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="m9 12 2 2 4-4"></path>
+            </svg>
+            Payment Confirmation
+          </h2>
+          <p style="margin: 8px 0 0 0; opacity: 0.9;">Review payment details before proceeding</p>
+        </div>
+
+        <div style="padding: 25px;">
+          <!-- Vendor Information -->
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #333; margin: 0 0 15px 0; display: flex; align-items: center;">
+              <svg width="20" height="20" style="margin-right: 8px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 21h18"></path>
+                <path d="M5 21V7l8-4v18"></path>
+                <path d="M19 21V11l-6-4"></path>
+              </svg>
+              Vendor Details
+            </h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+              <div style="display: grid; gap: 8px;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #666;">Name:</span>
+                  <span style="font-weight: bold;">${vendor.name}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #666;">Phone:</span>
+                  <span style="font-weight: bold;">${vendor.phone || 'Not available'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #666;">Email:</span>
+                  <span style="font-weight: bold;">${vendor.email || 'Not available'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #666;">Address:</span>
+                  <span style="font-weight: bold; text-align: right; max-width: 250px;">${vendor.address}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${bankDetailsHTML}
+
+          <!-- Payment Information -->
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #333; margin: 0 0 15px 0; display: flex; align-items: center;">
+              <svg width="20" height="20" style="margin-right: 8px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              Payment Information
+            </h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+              <div style="display: grid; gap: 8px;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #666;">Item:</span>
+                  <span style="font-weight: bold;">${item.name}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #666;">Quantity:</span>
+                  <span style="font-weight: bold;">${item.quantity}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #666;">Unit Price:</span>
+                  <span style="font-weight: bold;">${formatCurrency(item.vendorPrice)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #666;">Order Reference:</span>
+                  <span style="font-weight: bold;">${item.orderId}</span>
+                </div>
+                <hr style="border: none; border-top: 1px solid #dee2e6; margin: 10px 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 18px;">
+                  <span style="color: #333; font-weight: bold;">Total Amount:</span>
+                  <span style="font-weight: bold; color: #28a745; font-size: 20px;">${formatCurrency(item.totalVendorPrice)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Method -->
+          <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2196f3;">
+            <p style="margin: 0; color: #0d47a1; display: flex; align-items: center;">
+              <svg width="20" height="20" style="margin-right: 8px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <strong>Payment Method:</strong> Razorpay (Cards, UPI, Net Banking, Wallets)
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 15px; justify-content: flex-end;">
+            <button id="cancelPayment" style="
+              background: #6c757d;
+              color: white;
+              border: none;
+              padding: 12px 24px;
+              border-radius: 6px;
+              font-size: 16px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: background-color 0.2s;
+            ">Cancel</button>
+            <button id="proceedPayment" style="
+              background: #28a745;
+              color: white;
+              border: none;
+              padding: 12px 24px;
+              border-radius: 6px;
+              font-size: 16px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: background-color 0.2s;
+            ">Proceed to Payment</button>
+          </div>
+        </div>
+      `;
+
+      // Add CSS animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .payment-confirmation-modal button:hover {
+          filter: brightness(110%);
+        }
+      `;
+      document.head.appendChild(style);
+
+      modal.appendChild(dialogContent);
+      document.body.appendChild(modal);
+
+      // Event handlers
+      const cancelBtn = modal.querySelector('#cancelPayment');
+      const proceedBtn = modal.querySelector('#proceedPayment');
+
+      cancelBtn.onclick = () => {
+        document.body.removeChild(modal);
+        document.head.removeChild(style);
+        resolve(false);
+      };
+
+      proceedBtn.onclick = () => {
+        document.body.removeChild(modal);
+        document.head.removeChild(style);
+        resolve(true);
+      };
+
+      // Close on background click
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+          document.head.removeChild(style);
+          resolve(false);
+        }
+      };
+    });
   };
 
   // Get sorted and filtered data for display
@@ -1052,6 +1588,11 @@ const generateOrderIdMap = (orders) => {
     const processingKey = item.uniqueId || item.id;
     
     if (processingPayments[processingKey]) return;
+
+    // Show enhanced payment confirmation dialog
+    const confirmPayment = await showPaymentConfirmationDialog(item, selectedVendor, vendorBankDetails);
+
+    if (!confirmPayment) return;
 
     setProcessingPayments(prev => ({
       ...prev,
@@ -1076,7 +1617,24 @@ const generateOrderIdMap = (orders) => {
       const paymentData = {
         amount: item.totalVendorPrice,
         currency: 'INR',
-        receipt: `pay_${Date.now()}_${Math.floor(Math.random() * 1000)}`
+        receipt: `pay_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        notes: {
+          vendorId: selectedVendor.id,
+          vendorName: selectedVendor.name,
+          vendorPhone: selectedVendor.phone || '',
+          itemId: item.id,
+          itemName: item.name,
+          orderId: item.orderId,
+          quantity: item.quantity,
+          paymentType: 'vendor_payout',
+          // Include bank details if available
+          ...(vendorBankDetails && {
+            accountHolderName: vendorBankDetails.accountHolderName,
+            accountNumber: vendorBankDetails.accountNumber,
+            ifscCode: vendorBankDetails.ifscCode,
+            bankName: vendorBankDetails.bankName
+          })
+        }
       };
       
       console.log('Creating payment order with data:', paymentData);
@@ -1102,26 +1660,17 @@ const generateOrderIdMap = (orders) => {
         key: 'rzp_test_psQiRu5RCF99Dp',
         amount: orderData.amount.toString(),
         currency: orderData.currency,
-        name: 'Vendor Payment',
-        description: `Payment for ${item.name} - Qty: ${item.quantity}`,
+        name: 'Vendor Payment System',
+        description: `Payment to ${selectedVendor.name} for ${item.name} (Qty: ${item.quantity})`,
         order_id: orderData.id,
         prefill: {
-          name: 'Admin',
+          name: 'Admin User',
           email: 'admin@company.com',
           contact: '9999999999'
         },
-        notes: {
-          vendorId: selectedVendor.id,
-          itemId: item.id,
-          uniqueOrderItemId: item.uniqueId,
-          itemName: item.name,
-          orderId: item.orderId,
-          actualOrderId: item.actualOrderId,
-          quantity: item.quantity,
-          amount: item.totalVendorPrice
-        },
+        notes: paymentData.notes,
         theme: {
-          color: '#3399cc'
+          color: '#28a745'
         },
         handler: async (response) => {
           try {
@@ -1134,46 +1683,53 @@ const generateOrderIdMap = (orders) => {
               body: JSON.stringify({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
+                razorpay_signature: response.razorpay_signature,
+                vendorDetails: {
+                  id: selectedVendor.id,
+                  name: selectedVendor.name,
+                  phone: selectedVendor.phone,
+                  email: selectedVendor.email
+                },
+                itemDetails: {
+                  id: item.id,
+                  name: item.name,
+                  orderId: item.orderId,
+                  quantity: item.quantity,
+                  amount: item.totalVendorPrice
+                }
               })
             });
 
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
-              // Store payment record in Firebase with unique order-item identifier
-              const paymentKey = `payment_${Date.now()}`;
-              const paymentRef = ref(db, `payments/${paymentKey}`);
+              // Store payment record in Firebase
+              await storePaymentRecord(response, item, selectedVendor);
               
-              await set(paymentRef, {
-                paymentId: paymentKey,
-                vendorId: selectedVendor.id,
-                vendorName: selectedVendor.name,
-                itemId: item.id, // Original item ID for reference
-                uniqueOrderItemId: item.uniqueId, // Unique order-item combination
-                itemName: item.name,
-                orderId: item.orderId, // Display order ID
-                actualOrderId: item.actualOrderId, // Actual Firebase order ID
-                quantity: item.quantity,
-                amount: item.totalVendorPrice,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                status: 'completed',
-                createdAt: new Date().toISOString()
-              });
-
-              // Update paid items state using unique ID
+              // Send SMS notification to vendor
+              const smsResult = await sendVendorSMSNotification(selectedVendor, item, response.razorpay_payment_id);
+              
+              // Update paid items state
               setPaidItems(prev => ({
                 ...prev,
                 [item.uniqueId || item.id]: true
               }));
 
+              // Show success notification with SMS status
+              const smsStatusMessage = smsResult.success 
+                ? `Vendor ${selectedVendor.name} has been notified via SMS.`
+                : `Payment completed but SMS notification failed${selectedVendor.phone ? '' : ' (no phone number)'}.`;
+
               setNotification({
-                message: 'Payment Successful',
-                details: `Payment of ${formatCurrency(item.totalVendorPrice)} completed successfully!`,
+                message: 'Payment Successful! 🎉',
+                details: `Payment of ${formatCurrency(item.totalVendorPrice)} completed successfully! ${smsStatusMessage}`,
                 type: 'success',
                 icon: <CheckCircle size={20} />
               });
+
+              // Open receipt/details in new tab
+              openPaymentReceiptTab(response, item, selectedVendor);
+              
             } else {
               throw new Error('Payment verification failed');
             }
@@ -1673,7 +2229,30 @@ const generateOrderIdMap = (orders) => {
                     </div>
                   </div>
 
-
+                  {/* Payment Information Card */}
+                  <div className="stat-card payment-info">
+                    <div className="stat-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                      </svg>
+                    </div>
+                    <div className="stat-content">
+                      <span className="stat-value">
+                        {vendorBankDetails ? '✅ Available' : '❌ Missing'}
+                      </span>
+                      <span className="stat-label">Payment Details</span>
+                      {vendorBankDetails && (
+                        <div className="payment-details-preview">
+                          <div className="bank-info">
+                            <span className="bank-name">{vendorBankDetails.bankName}</span>
+                            <span className="account-holder">{vendorBankDetails.accountHolderName}</span>
+                            <span className="account-number">****{vendorBankDetails.accountNumber?.slice(-4)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

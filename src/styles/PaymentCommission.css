@@ -1020,6 +1020,45 @@
   color: #3f51b5;
 }
 
+.stat-card.payment-info .stat-icon {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.payment-details-preview {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.bank-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bank-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-holder {
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-number {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+}
+
 .stat-content {
   display: flex;
   flex-direction: column;

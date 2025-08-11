@@ -352,7 +352,7 @@
 
 
 
-import { ref, push, query, orderByChild, equalTo, get, remove, update } from 'firebase/database';
+import { ref, push, query, orderByChild, equalTo, get, remove } from 'firebase/database';
 import { db } from '../firebase/config';
 
 // Cache to track notifications we've already created in this session

@@ -10231,12 +10231,19 @@ const OrderManagement = () => {
   const setNormalizedStatus = async (orderId, status, orderData) => {
     try {
       const orderRef = ref(db, `orders/${orderId}`);
-      await update(orderRef, {
+      const updateData = {
         newStatus: status,
         // Set paymentStatus if not already set
         paymentStatus: orderData.paymentStatus ||
           (orderData.status === 'payment-completed' ? 'paid' : 'cod')
-      });
+      };
+
+      // Add timestamp when status changes to out_for_delivery
+      if (status === 'out_for_delivery') {
+        updateData.outForDeliveryAt = new Date().toISOString();
+      }
+
+      await update(orderRef, updateData);
       logAutoAssign(`Updated order ${orderId} with normalized status: ${status}`);
     } catch (err) {
       console.error(`Error updating normalized status for order ${orderId}:`, err);
@@ -12228,6 +12235,81 @@ const OrderManagement = () => {
     const intervalId = setInterval(checkForVendorReassignment, 60000);
 
     return () => clearInterval(intervalId);
+  }, [orders]);
+
+  // Auto-update orders from "out_for_delivery" to "delivered" after 30 minutes
+  useEffect(() => {
+    const checkForAutoDeliveryUpdate = () => {
+      if (!orders || orders.length === 0) return;
+
+      const now = new Date();
+
+      orders.forEach(async (order) => {
+        // Check if order is in "out_for_delivery" status
+        const currentStatus = order.newStatus || order.status;
+        
+        if (currentStatus !== 'out_for_delivery') return;
+
+        // Make sure there's a timestamp for when order went out for delivery
+        if (!order.outForDeliveryAt) {
+          // If missing timestamp, add it now for future tracking
+          try {
+            const orderRef = ref(db, `orders/${order.id}`);
+            await update(orderRef, {
+              outForDeliveryAt: new Date().toISOString()
+            });
+            console.log(`Added outForDeliveryAt timestamp to order ${order.id}`);
+          } catch (error) {
+            console.error(`Failed to add outForDeliveryAt timestamp to order ${order.id}:`, error);
+          }
+          return;
+        }
+
+        // Calculate time elapsed since order went out for delivery
+        const outForDeliveryAt = new Date(order.outForDeliveryAt);
+        const timeElapsedMinutes = (now - outForDeliveryAt) / (1000 * 60);
+
+        // Auto-deliver after 30 minutes
+        const autoDeliveryMinutes = 30;
+
+        if (timeElapsedMinutes > autoDeliveryMinutes) {
+          console.log(`Auto-updating order ${order.id} to delivered after ${timeElapsedMinutes.toFixed(1)} minutes`);
+
+          try {
+            const orderRef = ref(db, `orders/${order.id}`);
+            const updateData = {
+              status: 'delivered',
+              newStatus: 'delivered',
+              deliveredAt: new Date().toISOString(),
+              autoDelivered: true,
+              deliveryNote: `Auto-delivered after ${autoDeliveryMinutes} minutes`
+            };
+
+            // Add to timeline if it exists
+            if (order.timeline) {
+              const newTimelineEntry = {
+                status: 'delivered',
+                time: new Date().toISOString(),
+                note: `Order automatically marked as delivered after ${autoDeliveryMinutes} minutes`,
+                automatic: true
+              };
+              updateData.timeline = [...order.timeline, newTimelineEntry];
+            }
+
+            await update(orderRef, updateData);
+            console.log(`Successfully auto-delivered order ${order.id}`);
+          } catch (error) {
+            console.error(`Failed to auto-deliver order ${order.id}:`, error);
+          }
+        }
+      });
+    };
+
+    // Run immediately and then every 5 minutes to check for auto-delivery
+    checkForAutoDeliveryUpdate();
+    const deliveryIntervalId = setInterval(checkForAutoDeliveryUpdate, 5 * 60 * 1000); // Check every 5 minutes
+
+    return () => clearInterval(deliveryIntervalId);
   }, [orders]);
 
   useEffect(() => {

@@ -4947,6 +4947,95 @@ const ShopPartnerDashboard = () => {
     return Array.from(areas).sort();
   };
 
+  // Calculate earnings for all shops when orders data changes
+  useEffect(() => {
+    if (orders.length > 0) {
+      setShops(prevShops => {
+        if (prevShops.length === 0) return prevShops;
+        
+        return prevShops.map(shop => {
+          const shopOrders = orders.filter(order =>
+            order.vendor && order.vendor.id === shop.id
+          );
+
+          // Calculate order counts
+          const counts = {
+            pending: shopOrders.filter(o => o.status === 'pending').length,
+            processing: shopOrders.filter(o => o.status === 'processing').length,
+            completed: shopOrders.filter(o => o.status === 'delivered').length,
+            cancelled: shopOrders.filter(o => o.status === 'cancelled').length
+          };
+
+          // Calculate earnings from delivered orders
+          const deliveredOrders = shopOrders.filter(o => o.status === 'delivered');
+          const commissionRate = shop.commissionRate || 10;
+
+          // Calculate monthly earnings
+          const currentDate = new Date();
+          const currentMonth = currentDate.getMonth();
+          const currentYear = currentDate.getFullYear();
+          const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+          const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+          let currentMonthEarnings = 0;
+          let previousMonthEarnings = 0;
+          let totalEarnings = 0;
+
+          // Calculate earnings from delivered orders
+          deliveredOrders.forEach(order => {
+            const orderDate = new Date(order.orderDate);
+            const orderMonth = orderDate.getMonth();
+            const orderYear = orderDate.getFullYear();
+
+            // Add to total earnings (ALL delivered orders raw total)
+            totalEarnings += calculateAmountWithoutTax(order);
+
+            // For current and previous month, calculate earnings after commission
+            const shopEarning = (calculateAmountWithoutTax(order) * (100 - commissionRate)) / 100;
+
+            // Add to current month earnings only if order is from current month
+            if (orderMonth === currentMonth && orderYear === currentYear) {
+              currentMonthEarnings += shopEarning;
+            }
+
+            // Add to previous month earnings only if order is from previous month
+            if (orderMonth === previousMonth && orderYear === previousYear) {
+              previousMonthEarnings += shopEarning;
+            }
+          });
+
+          const updatedEarnings = {
+            currentMonth: currentMonthEarnings,
+            previousMonth: previousMonthEarnings,
+            total: totalEarnings
+          };
+
+          // Only update if values actually changed
+          const hasChanged = 
+            !shop.earnings ||
+            shop.earnings.total !== updatedEarnings.total ||
+            shop.earnings.currentMonth !== updatedEarnings.currentMonth ||
+            shop.earnings.previousMonth !== updatedEarnings.previousMonth ||
+            !shop.orders ||
+            shop.orders.pending !== counts.pending ||
+            shop.orders.processing !== counts.processing ||
+            shop.orders.completed !== counts.completed ||
+            shop.orders.cancelled !== counts.cancelled;
+
+          if (hasChanged) {
+            return {
+              ...shop,
+              orders: counts,
+              earnings: updatedEarnings
+            };
+          }
+
+          return shop;
+        });
+      });
+    }
+  }, [orders]); // Only depend on orders
+
   // Fetch orders for current shop and calculate earnings
   useEffect(() => {
     if (!selectedShop) return;
